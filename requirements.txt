@@ -1,0 +1,44 @@
+# HACKNATION Dependencies
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+pillow>=10.0.0
+requests>=2.31.0
+python-multipart>=0.0.6
+
+# PyTorch (for CPU / GPU inference)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Remote Sensing & Geospatial
+python-dotenv>=1.0.0
+sentinelhub>=3.11.0
+scikit-image>=0.22.0
+tifffile>=2023.0.0
+pyiqa>=0.1.16
+leafmap>=0.30.0
+
+# Core Processing (used in backend production paths)
+opencv-python-headless>=4.8.0
+spyndex>=0.5.0
+onnxruntime>=1.16.0
+matplotlib>=3.7.0
+
+# Model Architectures & Sharpening
+timm>=0.9.0
+basicsr>=1.4.0
+
+# Optional: Spatial Co-Registration (install for paired-reference AQI/PSNR/SSIM/SAM)
+arosics>=1.0.0
+
+# Optional: LDSR-S2 Latent Diffusion Engine
+# opensr-model>=0.1.0   # Requires dedicated install from source
+
+# Blockchain Provenance (deploy scripts)
+web3>=6.10.0
+
+# Testing
+pytest>=7.4.0
+httpx>=0.25.0

@@ -1,0 +1,83 @@
+# Implementation Plan: web-Live360 Color Palette Extraction
+
+This document outlines the extraction of the color palette and design tokens from the `web-Live360` project and provides a complete plan for implementing them in your new project.
+
+## Project Analysis Summary
+- **Zid360 / web-Live360**: The `web-Live360` folder contains a Vite/React-based landing page with a robust CSS custom properties system defined in `index.css`. 
+- It uses a dual-theme system (Dark mode by default, Light mode via `@media (prefers-color-scheme: light)`).
+- The design system prioritizes a rich, modern aesthetic using slate/blue-black backgrounds with a vibrant yellow/amber primary accent.
+
+## Extracted Color Palette
+
+### 🌑 Dark Theme (Default)
+| Element | Color Code | Variable Name | Description |
+| :--- | :--- | :--- | :--- |
+| **Background** | `#06090F` | `--bg-color` | Deepest background color for the main page |
+| **Surface** | `#0D1117` | `--bg-surface` | Slightly lighter background for sections/areas |
+| **Card / Container**| `#111820` | `--card-bg` | Background for panels and cards |
+| **Primary Text** | `#F0F4F8` | `--text-primary` | Main reading text (off-white) |
+| **Secondary Text**| `#7B8FA3` | `--text-secondary`| Muted text and subtitles |
+| **Tertiary Text** | `#4A5568` | `--text-tertiary` | Very muted/disabled text |
+| **Primary Accent**| `#F7C948` | `--accent-color` | Vibrant yellow for primary actions/buttons |
+| **Accent Light** | `#FFE066` | `--accent-light` | Hover/Highlight state for accent |
+| **Accent Dark** | `#C99A2E` | `--accent-dark` | Active/Pressed state for accent |
+| **Accent Text** | `#0B0F14` | `--accent-text` | Text that sits directly on top of the accent color |
+| **Border** | `#1B232E` | `--border-color` | Default divider and border color |
+| **Card Border** | `#1F2937` | `--card-border` | Borders specifically for cards/panels |
+| **Success** | `#34D399` | `--success-color` | Positive actions or success states |
+| **Danger** | `#ee3636` | `--danger-color` | Errors, destructive actions, or warnings |
+| **Info** | `#60A5FA` | `--info-color` | Informational highlights |
+| **Purple/Special**| `#A78BFA` | `--purple-color` | Special elements or gradients |
+| **Modal Overlay** | `rgba(6, 9, 15, 0.9)` | `--modal-backdrop` | The semi-transparent overlay behind popups |
+
+### ☀️ Light Theme
+| Element | Color Code | Variable Name | Description |
+| :--- | :--- | :--- | :--- |
+| **Background** | `#F8FAFC` | `--bg-color` | Light slate background |
+| **Surface** | `#FFFFFF` | `--bg-surface` | Pure white background for sections |
+| **Card / Container**| `#FFFFFF` | `--card-bg` | Background for panels and cards |
+| **Primary Text** | `#0F172A` | `--text-primary` | Main reading text (dark slate) |
+| **Secondary Text**| `#64748B` | `--text-secondary`| Muted text and subtitles |
+| **Tertiary Text** | `#94A3B8` | `--text-tertiary` | Very muted/disabled text |
+| **Primary Accent**| `#D97706` | `--accent-color` | Amber/Orange primary brand color |
+| **Accent Light** | `#F59E0B` | `--accent-light` | Hover/Highlight state for accent |
+| **Accent Dark** | `#B45309` | `--accent-dark` | Active/Pressed state for accent |
+| **Accent Text** | `#FFFFFF` | `--accent-text` | Text that sits directly on top of the accent color |
+| **Border** | `#E2E8F0` | `--border-color` | Default divider and border color |
+| **Card Border** | `#E2E8F0` | `--card-border` | Borders specifically for cards/panels |
+| **Success** | `#10B981` | `--success-color` | Positive actions or success states |
+| **Danger** | `#ee3636` | `--danger-color` | Errors, destructive actions, or warnings |
+| **Info** | `#3B82F6` | `--info-color` | Informational highlights |
+| **Purple/Special**| `#8B5CF6` | `--purple-color` | Special elements or gradients |
+| **Modal Overlay** | `rgba(15, 23, 42, 0.4)`| `--modal-backdrop` | The semi-transparent overlay behind popups |
+
+## Additional Design Tokens (Spacing & Radius)
+To fully match the design language, these variables were also extracted:
+- `--radius`: `20px`
+- `--radius-sm`: `14px`
+- `--radius-xs`: `8px`
+- `--radius-full`: `999px`
+
+## Implementation Plan
+
+Here is how we will implement this into your new project:
+
+### Step 1: Base Global CSS Setup
+We will inject a CSS file (e.g., `globals.css` or `index.css`) containing the CSS variables extracted above inside the `:root` and `@media (prefers-color-scheme: light)` blocks.
+
+### Step 2: Styling Integration
+Depending on your new project's stack:
+- **Vanilla CSS / Modules:** Directly use `var(--variable-name)` throughout your stylesheets.
+- **Tailwind CSS:** We will map these CSS variables into the Tailwind configuration (e.g., `tailwind.config.js` or via `@theme` in Tailwind v4) so you can use utility classes like `bg-background`, `text-accent`, etc.
+
+### Step 3: Typography Integration
+The palette pairs with the `Inter` font family. We will import this font from Google Fonts and set it as the default base font.
+
+## User Review Required
+> [!NOTE]
+> Please review the color codes and the implementation strategy above. 
+
+## Open Questions
+> [!IMPORTANT]
+> 1. What framework or tech stack are you using for the **new project** (e.g., React+Tailwind, Next.js, plain HTML/CSS)?
+> 2. Would you like me to go ahead and write the specific `globals.css` (or `tailwind.config.js`) file for your new project right now? If so, please provide the path to your new project's directory.

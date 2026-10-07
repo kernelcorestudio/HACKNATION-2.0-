@@ -1,0 +1,31 @@
+# Implement Full-Screen Location Picker Modal
+
+This plan describes how to integrate the full-screen map modal from `geo-srm-redesign-v7.html` into the existing `index.html` and wire it up to the existing Leaflet map instance without duplicating the map.
+
+## Proposed Changes
+
+### 1. `frontend/index.html`
+- **[MODIFY]**: Add the `<button class="map-expand-btn" id="open-map-modal">⤢ Expand map</button>` inside the existing `.map-wrapper` alongside the sidebar map.
+- **[MODIFY]**: Append the full `<div class="map-modal-overlay" id="map-modal-overlay">` markup (from `geo-srm-redesign-v7.html`) just before the closing `</body>` tag.
+- **[MODIFY]**: Remove the dummy gradient map background from the modal's `.map-canvas` placeholder, as we will inject the real map there dynamically.
+
+### 2. `frontend/styles.css`
+- **[MODIFY]**: Append all CSS rules pertaining to the map modal (`.map-modal-overlay`, `.map-modal`, `.map-search`, `.map-canvas`, etc.) from the redesign file into our main stylesheet.
+- **[MODIFY]**: Add styling for the `.map-expand-btn` that sits over the small map.
+
+### 3. `frontend/app.js`
+- **[MODIFY]**: Add modal state management logic.
+  - `openMapModal()`: Display the modal. Move the `document.getElementById('aoi-map')` DOM node from the sidebar `.map-wrapper` directly into the modal's `.map-canvas` container. Call `map.invalidateSize()` so Leaflet correctly scales up to full-screen.
+  - `closeMapModal()`: Hide the modal. Move the `#aoi-map` node back to the sidebar `.map-wrapper`. Call `map.invalidateSize()` so it shrinks back properly.
+- **[MODIFY]**: Wire the Modal Toolbar:
+  - **Search**: Bind an event listener to the `.map-search input`. On Enter, fetch `https://nominatim.openstreetmap.org/search?format=json&q=...` (OpenStreetMap's free geocoder). On success, call `map.flyTo([lat, lon], 12)`.
+  - **Lat/Lon Jump**: Bind the modal's Jump button to parse the modal's lat/lon inputs and call `map.flyTo`.
+  - **Draw Bounding Box**: Bind the `#map-modal-draw` button to trigger the existing `new L.Draw.Rectangle(map, drawControl.options.draw.rectangle).enable();` logic.
+  - **Apply Selection**: Since drawing or clicking the map already triggers `fetchTileForBbox` natively in the current setup, "Apply selection" will simply sync the latest map center coordinates to the sidebar and trigger `closeMapModal()`.
+
+## Verification Plan
+
+1. Click "Expand map" -> The map seamlessly expands to full screen.
+2. Search "Delhi" -> The map flies to Delhi.
+3. Draw a bounding box -> The Leaflet draw tool activates on the large map.
+4. Click "Apply Selection" -> The modal closes, the map seamlessly jumps back to the sidebar, and the newly selected bounding box/coordinates are loaded in the viewer.
