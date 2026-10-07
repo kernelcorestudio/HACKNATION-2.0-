@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NETRA · Sentinel-2 — Redesign v2</title>
+<link rel="icon" type="image/png" href="/static/assets/logo.png">
+<link rel="shortcut icon" href="/static/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D1315;
+    --panel:#131B1D;
+    --panel-raised:#172023;
+    --border:rgba(140,170,172,0.14);
+    --border-strong:rgba(140,170,172,0.26);
+    --text-1:#E9EFEE;
+    --text-2:#93A6A8;
+    --text-3:#5C6F71;
+    --accent:#4FB8A6;
+    --accent-soft:rgba(79,184,166,0.12);
+    --warn:#E8A33D;
+    --warn-soft:rgba(232,163,61,0.10);
+    --risk:#E2574C;
+    --good:#6FCF97;
+    --radius:10px;
+    --radius-sm:6px;
+    --sans:'IBM Plex Sans', -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);color:var(--text-1);font-family:var(--sans);
+    font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex;align-items:center;gap:13px;}
+  .brand-mark{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;
+    background:radial-gradient(circle at 30% 30%, #6ED4C2, var(--accent) 60%, #276456);
+  }
+  .brand-text h1{margin:0;font-size:14.5px;font-weight:600;}
+  .brand-text h1 span{color:var(--text-2);font-weight:400;}
+  .brand-text p{margin:1px 0 0;font-size:11px;color:var(--text-3);}
+  .badge{
+    display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;
+    font-size:11px;color:var(--text-2);border:1px solid var(--border-strong);
+  }
+  .badge .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
+
+  /* ---------- Tab nav ---------- */
+  nav.tabs{
+    display:flex;gap:6px;padding:0 28px;border-bottom:1px solid var(--border);
+    max-width:var(--maxw);margin:0 auto;
+  }
+  nav.tabs button{
+    font-family:var(--sans);background:none;border:none;color:var(--text-2);
+    font-size:13.5px;font-weight:500;padding:14px 4px;margin-right:26px;
+    cursor:pointer;position:relative;
+  }
+  nav.tabs button.active{color:var(--text-1);}
+  nav.tabs button.active::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);
+  }
+  nav.tabs button .n{
+    font-family:var(--mono);font-size:10.5px;color:var(--text-3);margin-right:7px;
+  }
+
+  .page{display:none;max-width:var(--maxw);margin:0 auto;padding:36px 28px 60px;}
+  .page.active{display:block;}
+
+  /* ---------- Viewer page layout (AOI rail + main viewer) ---------- */
+  .viewer-layout{display:grid;grid-template-columns:252px 1fr;gap:40px;}
+  @media (max-width:900px){.viewer-layout{grid-template-columns:1fr;}}
+  .aoi-rail h3{font-size:12px;font-weight:600;margin:0 0 14px;color:var(--text-2);text-transform:none;}
+
+  .page-head{margin-bottom:28px;}
+  .page-head h2{margin:0 0 6px;font-size:19px;font-weight:600;}
+  .page-head p{margin:0;font-size:13px;color:var(--text-3);max-width:560px;}
+
+  /* ---------- Viewer page ---------- */
+  .toolbar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    margin-bottom:16px;
+  }
+  .toolbar-left,.toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  select{
+    background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+    padding:9px 30px 9px 12px;color:var(--text-1);font-family:var(--sans);font-size:13px;
+    appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);
+    background-position:calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  .toggle-group{display:flex;border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden;}
+  .toggle-group span{padding:8px 14px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+  .toggle-group span.active{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .toggle-group span:not(:last-child){border-right:1px solid var(--border-strong);}
+  .btn{
+    font-family:var(--sans);font-size:12.5px;font-weight:500;padding:9px 15px;
+    border-radius:var(--radius-sm);border:1px solid var(--border-strong);
+    background:var(--panel-raised);color:var(--text-1);cursor:pointer;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn-primary{background:var(--accent);color:#08211C;border-color:var(--accent);font-weight:600;}
+  .zoom-group{display:flex;align-items:center;gap:2px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:3px;}
+  .zoom-group button{width:26px;height:26px;border:none;background:transparent;color:var(--text-2);border-radius:4px;cursor:pointer;}
+  .zoom-group .zval{font-family:var(--mono);font-size:11px;padding:0 6px;}
+
+  .layers-row{
+    display:flex;gap:24px;flex-wrap:wrap;padding:14px 0;
+    border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:18px;
+  }
+  .layer-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);}
+  .layer-toggle input[type=checkbox]{
+    appearance:none;width:14px;height:14px;border-radius:4px;border:1px solid var(--border-strong);
+    background:var(--panel-raised);cursor:pointer;position:relative;
+  }
+  .layer-toggle input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent);}
+  .layer-toggle input[type=checkbox]:checked::after{
+    content:"";position:absolute;left:4px;top:1px;width:3px;height:7px;
+    border:solid #08211C;border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+  .layer-toggle .opac{width:60px;}
+  input[type=range]{-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border-strong);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #0D1315;}
+
+  .alert{
+    padding:11px 16px;border-radius:var(--radius-sm);background:var(--warn-soft);
+    border:1px solid rgba(232,163,61,.3);display:flex;align-items:center;gap:10px;
+    font-size:12.5px;color:#F0C879;margin-bottom:18px;
+  }
+  .alert .x{margin-left:auto;cursor:pointer;opacity:.7;}
+
+  .viewer{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);
+    border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);
+  }
+  .pane{background:var(--panel);}
+  .pane-head{padding:11px 14px;font-size:12px;color:var(--text-2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+  .pane-head b{color:var(--text-1);font-weight:600;}
+  .pane-img{height:320px;}
+  .tex1{background:radial-gradient(circle at 20% 30%, rgba(120,150,90,.55) 0 40px, transparent 41px),radial-gradient(circle at 60% 65%, rgba(150,160,110,.5) 0 55px, transparent 56px),radial-gradient(circle at 80% 20%, rgba(90,110,70,.5) 0 30px, transparent 31px),linear-gradient(160deg,#8F9A6E,#6F7C55 45%,#54613F);filter:saturate(.75) contrast(.9) blur(1.5px);}
+  .tex2{background:radial-gradient(circle at 22% 32%, rgba(120,150,90,.65) 0 40px, transparent 41px),radial-gradient(circle at 58% 62%, rgba(150,160,110,.6) 0 55px, transparent 56px),radial-gradient(circle at 78% 22%, rgba(90,110,70,.6) 0 30px, transparent 31px),linear-gradient(160deg,#94A072,#727F58 45%,#576440);filter:saturate(.9) contrast(1.05);}
+  .tex3{background:radial-gradient(circle at 24% 34%, rgba(110,120,95,.6) 0 38px, transparent 39px),radial-gradient(circle at 55% 60%, rgba(160,150,120,.55) 0 60px, transparent 61px),linear-gradient(160deg,#8D8975,#6D6C5B 45%,#524F42);filter:saturate(.8) contrast(1);}
+  .pane-foot{padding:9px 14px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--text-3);border-top:1px solid var(--border);}
+
+  .scale-bar{margin-top:18px;display:flex;flex-direction:column;gap:8px;}
+  .scale-bar .grad{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--risk),var(--warn),var(--good));}
+  .scale-bar .labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);}
+
+  .export-row{display:flex;gap:10px;margin-top:22px;}
+
+  /* ---------- Configuration page ---------- */
+  .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;}
+  @media (max-width:820px){.config-grid{grid-template-columns:1fr;}}
+  .config-col h3{font-size:13px;font-weight:600;margin:0 0 16px;color:var(--text-1);}
+  .aoi-card{
+    padding:14px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);
+    border-left:2px solid transparent;cursor:pointer;margin-bottom:8px;
+  }
+  .aoi-card:hover{border-color:var(--border-strong);}
+  .aoi-card.active{border-left-color:var(--accent);background:var(--accent-soft);border-color:rgba(79,184,166,.3);}
+  .aoi-card h4{margin:0 0 4px;font-size:13px;font-weight:600;}
+  .aoi-card p{margin:0;font-size:12px;color:var(--text-2);}
+  .map-preview{
+    height:150px;border-radius:var(--radius-sm);margin-top:14px;position:relative;overflow:hidden;
+    border:1px solid var(--border);
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 24px),repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 24px),linear-gradient(135deg,#1B2A28,#122320);
+  }
+  .map-preview .pin{position:absolute;top:46%;left:58%;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px rgba(79,184,166,.18);}
+  .map-expand-btn{
+    position:absolute;bottom:8px;right:8px;padding:5px 10px;font-size:10.5px;font-weight:500;
+    border-radius:5px;border:1px solid var(--border-strong);background:rgba(13,19,21,.85);
+    color:var(--text-1);cursor:pointer;font-family:var(--sans);
+  }
+  .map-expand-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- Full map modal ---------- */
+  .map-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(6,9,10,.72);z-index:100;
+    align-items:center;justify-content:center;padding:28px;
+  }
+  .map-modal-overlay.open{display:flex;}
+  .map-modal{
+    width:100%;max-width:1120px;height:88vh;background:var(--bg);border:1px solid var(--border-strong);
+    border-radius:12px;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .map-modal-head{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+    border-bottom:1px solid var(--border);
+  }
+  .map-modal-head h3{margin:0;font-size:14.5px;font-weight:600;}
+  .map-modal-close{
+    width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--panel-raised);
+    color:var(--text-2);cursor:pointer;font-size:14px;
+  }
+  .map-modal-close:hover{color:var(--text-1);border-color:var(--accent);}
+  .map-modal-toolbar{
+    display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .map-search{
+    flex:1;min-width:220px;display:flex;align-items:center;gap:8px;
+    background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+    padding:9px 12px;
+  }
+  .map-search input{
+    flex:1;background:none;border:none;outline:none;color:var(--text-1);
+    font-family:var(--sans);font-size:13px;
+  }
+  .map-search .icon{color:var(--text-3);font-size:13px;}
+  .map-modal-toolbar .divider{width:1px;height:22px;background:var(--border-strong);}
+  .map-modal-toolbar .coord-inline{display:flex;align-items:center;gap:6px;}
+  .map-modal-toolbar .coord-inline input{
+    width:88px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:8px 9px;color:var(--text-1);font-family:var(--mono);font-size:12px;
+  }
+  .map-modal-body{flex:1;position:relative;overflow:hidden;}
+  .map-canvas{
+    position:absolute;inset:0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 34px),
+      radial-gradient(circle at 35% 40%, #22403A 0, transparent 45%),
+      radial-gradient(circle at 68% 62%, #1E3630 0, transparent 40%),
+      linear-gradient(135deg,#16211F,#0F1917);
+  }
+  .map-canvas .pin-lg{
+    position:absolute;top:44%;left:56%;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 8px rgba(79,184,166,.16);
+  }
+  .map-canvas .bbox{
+    position:absolute;top:36%;left:46%;width:220px;height:150px;
+    border:2px solid var(--accent);background:rgba(79,184,166,.08);border-radius:2px;
+  }
+  .map-modal-foot{
+    display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+    border-top:1px solid var(--border);
+  }
+  .map-modal-foot .coords-readout{font-family:var(--mono);font-size:12px;color:var(--text-2);}
+  .map-zoom-controls{
+    position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;
+    border:1px solid var(--border-strong);border-radius:var(--radius-sm);overflow:hidden;
+  }
+  .map-zoom-controls button{
+    width:32px;height:32px;background:var(--panel-raised);border:none;border-bottom:1px solid var(--border);
+    color:var(--text-1);cursor:pointer;font-size:15px;
+  }
+  .map-zoom-controls button:last-child{border-bottom:none;}
+  .coord-row{display:flex;gap:10px;margin-top:14px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:11px;color:var(--text-3);margin-bottom:5px;}
+  .field input{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 10px;color:var(--text-1);font-family:var(--mono);font-size:12.5px;}
+  .link-action{font-size:12px;color:var(--accent);cursor:pointer;margin-top:14px;display:inline-block;}
+
+  .form-group{margin-bottom:20px;}
+  .form-group label{display:block;font-size:12px;color:var(--text-2);margin-bottom:7px;}
+  .form-group select{width:100%;padding:10px 30px 10px 12px;}
+  .slider-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .slider-row label{margin:0;font-size:12px;color:var(--text-2);}
+  .slider-row .val{font-family:var(--mono);font-size:12px;color:var(--accent);}
+  .form-group input[type=range]{width:100%;}
+
+  /* ---------- Analytics page ---------- */
+  .analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
+  @media (max-width:900px){.analytics-grid{grid-template-columns:1fr;}}
+
+  .acard{border:1px solid var(--border);border-radius:var(--radius);padding:26px 28px;background:var(--panel);}
+  .acard.full{width:100%;}
+  .acard-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;}
+  .acard-head h3{margin:0;font-size:14.5px;font-weight:600;}
+
+  .pill-badge{font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:12px;white-space:nowrap;letter-spacing:.2px;}
+  .pill-badge.teal{color:var(--accent);background:var(--accent-soft);}
+  .pill-badge.violet{color:#C9BBF0;background:rgba(201,187,240,.12);}
+  .pill-badge.amber{color:var(--warn);background:var(--warn-soft);}
+  .pill-badge.neutral{color:var(--text-2);background:var(--panel-raised);border:1px solid var(--border-strong);}
+
+  .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .tile-grid-3{grid-template-columns:repeat(3,1fr);}
+  @media (max-width:520px){.tile-grid-3{grid-template-columns:1fr 1fr;}}
+  .tile{padding:16px 18px;border-radius:var(--radius-sm);background:var(--panel-raised);border:1px solid var(--border);}
+  .tile .v{font-family:var(--mono);font-size:21px;font-weight:500;color:var(--text-1);white-space:nowrap;}
+  .tile .v .unit{font-size:12px;color:var(--text-3);font-weight:400;margin-left:4px;}
+  .tile .v.good{color:var(--good);}
+  .tile .l{font-size:11px;color:var(--text-3);margin-top:6px;}
+
+  .acard-note{font-size:12.5px;color:var(--text-2);margin:20px 0 0;line-height:1.6;padding-top:18px;border-top:1px solid var(--border);}
+  .kv-strip{display:flex;gap:32px;margin-top:20px;padding-top:18px;border-top:1px solid var(--border);flex-wrap:wrap;}
+  .kv-strip div{font-size:11.5px;color:var(--text-3);}
+  .kv-strip div b{display:block;color:var(--text-1);font-family:var(--mono);font-size:12.5px;font-weight:500;margin-top:4px;}
+
+  .pipeline-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;
+  }
+  .pcell{background:var(--panel-raised);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;}
+  .pcell .l{font-size:10.5px;color:var(--text-3);margin-bottom:7px;letter-spacing:.2px;}
+  .pcell .v{font-family:var(--mono);font-size:12.5px;color:var(--text-1);line-height:1.6;}
+  .chain-row{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    margin-top:20px;padding:16px 18px;border:1px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--panel-raised);
+  }
+  .chain-row p{margin:0;font-size:12px;color:var(--text-2);}
+  .chain-row p b{color:var(--text-1);font-weight:600;}
+
+  /* ---------- Mode pills (header) ---------- */
+  .mode-pills{display:flex;gap:6px;}
+  .mode-pill{
+    display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:20px;
+    font-size:12.5px;font-weight:500;color:var(--text-2);border:1px solid transparent;
+    cursor:pointer;background:transparent;font-family:var(--sans);
+  }
+  .mode-pill.active{background:var(--accent-soft);color:var(--accent);border-color:rgba(79,184,166,.3);}
+  .mode-pill .tag-new{
+    font-size:9px;font-weight:600;color:#08211C;background:var(--good);
+    padding:1px 6px;border-radius:8px;letter-spacing:.3px;
+  }
+
+  /* ---------- Split slider comparison ---------- */
+  .split-view{
+    position:relative;height:420px;border-radius:var(--radius);overflow:hidden;
+    border:1px solid var(--border);user-select:none;
+  }
+  .split-view .layer{position:absolute;inset:0;}
+  .split-view .layer.over{clip-path:inset(0 0 0 52%);}
+  .split-handle{position:absolute;top:0;bottom:0;left:52%;width:0;pointer-events:none;}
+  .split-handle::before{
+    content:"";position:absolute;top:0;bottom:0;left:0;width:2px;background:var(--accent);
+    box-shadow:0 0 10px rgba(79,184,166,.6);
+  }
+  .split-grip{
+    position:absolute;top:50%;left:0;transform:translate(-50%,-50%);
+    width:34px;height:34px;border-radius:50%;background:var(--accent);color:#08211C;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;
+    cursor:ew-resize;pointer-events:all;border:3px solid var(--bg);
+  }
+  .split-tag{
+    position:absolute;bottom:14px;padding:6px 12px;border-radius:6px;
+    background:rgba(13,19,21,.88);font-size:11px;color:var(--text-1);
+    border:1px solid var(--border-strong);font-family:var(--mono);
+  }
+  .split-tag.left{left:14px;}
+  .split-tag.right{right:14px;}
+  .split-legend{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    margin-top:14px;font-size:11px;color:var(--text-3);
+  }
+  .split-legend .grad-inline{width:160px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--risk),var(--warn),var(--good));}
+  .split-legend .legend-l{display:flex;align-items:center;gap:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:28px;">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <h1>GEO-SRM <span>· Sentinel-2</span></h1>
+        <p>Deep learning super-resolution · HACKNATION</p>
+      </div>
+    </div>
+    <div class="mode-pills">
+      <button class="mode-pill active" data-mode="sr">Super-resolution &amp; trust</button>
+      <button class="mode-pill" data-mode="spectral">Spectral &amp; disaster analysis <span class="tag-new">NEW</span></button>
+    </div>
+  </div>
+  <div class="badge"><span class="dot"></span> v7 verified · Polygon Amoy</div>
+</header>
+
+<nav class="tabs">
+  <button class="active" data-page="viewer"><span class="n">01</span>Viewer</button>
+  <button data-page="config"><span class="n">02</span>Configuration</button>
+  <button data-page="analytics"><span class="n">03</span>Analytics &amp; provenance</button>
+</nav>
+
+<!-- ============ PAGE 1: VIEWER ============ -->
+<section class="page active" id="page-viewer">
+  <div class="page-head">
+    <h2>Super-resolution viewer</h2>
+    <p>Varanasi river meander &amp; floodplain — comparing Sentinel-2 input against HAT output and paired ground truth.</p>
+  </div>
+
+  <div class="viewer-layout">
+  <div class="aoi-rail">
+    <h3>Area of interest</h3>
+    <div class="aoi-card">
+      <h4>Punjab agricultural parcels</h4>
+      <p>High-contrast crop field boundaries and canals</p>
+    </div>
+    <div class="aoi-card">
+      <h4>Delhi NCR urban infrastructure</h4>
+      <p>Dense urban grids, highways, residential blocks</p>
+    </div>
+    <div class="aoi-card active">
+      <h4>Varanasi river meander &amp; floodplain</h4>
+      <p>Ganges river bend, riparian buffers, silt sandbars</p>
+    </div>
+    <div class="map-preview">
+      <div class="pin"></div>
+      <button class="map-expand-btn" id="open-map-modal" title="Open full map">⤢ Expand map</button>
+    </div>
+    <div class="coord-row">
+      <div class="field"><label>Latitude</label><input value="25.3200"></div>
+      <div class="field"><label>Longitude</label><input value="82.9750"></div>
+    </div>
+    <span class="link-action" id="open-map-modal-2">+ Draw bounding box on map</span>
+  </div>
+
+  <div class="viewer-main">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="toggle-group" id="view-toggle">
+        <span class="active" data-view="split">Split slider</span>
+        <span data-view="grid">Side-by-side</span>
+      </div>
+      <select><option>True colour — natural RGB</option></select>
+    </div>
+    <div class="toolbar-right">
+      <div class="zoom-group"><button>–</button><span class="zval">1.0×</span><button>+</button></div>
+      <button class="btn">1:1</button>
+    </div>
+  </div>
+
+  <div class="layers-row">
+    <label class="layer-toggle"><input type="checkbox"> Confidence heatmap <input type="range" class="opac" value="60"></label>
+    <label class="layer-toggle"><input type="checkbox" checked> Buildings &amp; roads <input type="range" class="opac" value="80"></label>
+    <label class="layer-toggle"><input type="checkbox"> Cloud mask <input type="range" class="opac" value="40"></label>
+    <label class="layer-toggle"><input type="checkbox"> ISRO Bhuvan reference <input type="range" class="opac" value="50"></label>
+  </div>
+
+  <div class="alert">⚠ Cloud cover detected (0.38%) — occluded pixels are masked to prevent hallucinated structures.<span class="x">✕</span></div>
+
+  <!-- Split slider comparison (default) -->
+  <div class="split-view" id="split-view">
+    <div class="layer base tex1"></div>
+    <div class="layer over tex2" id="split-over"></div>
+    <div class="split-handle" id="split-handle">
+      <div class="split-grip">⟷</div>
+    </div>
+    <div class="split-tag left">Input · Sentinel-2 L2A (10m)</div>
+    <div class="split-tag right">Output · HAT (2.5m)</div>
+  </div>
+  <div class="split-legend">
+    <div class="legend-l"><span>Hallucination risk</span><div class="grad-inline"></div><span>Observed ground truth</span></div>
+    <span>Resolution gain: 10.0m → 2.5m (16× pixel density)</span>
+  </div>
+
+  <!-- Side-by-side 3-pane comparison (alternate) -->
+  <div class="viewer" id="grid-view" style="display:none;margin-top:0;">
+    <div class="pane">
+      <div class="pane-head">Input <b>Sentinel-2 L2A · 10m</b></div>
+      <div class="pane-img tex1"></div>
+      <div class="pane-foot"><span>128 × 128 px</span><span>LR source</span></div>
+    </div>
+    <div class="pane">
+      <div class="pane-head">Output <b>HAT · 2.5m</b></div>
+      <div class="pane-img tex2"></div>
+      <div class="pane-foot"><span>512 × 512 px</span><span>4× / 16× density</span></div>
+    </div>
+    <div class="pane">
+      <div class="pane-head">Reference <b>Ground truth · 1.5m</b></div>
+      <div class="pane-img tex3"></div>
+      <div class="pane-foot"><span>SPOT 6/7 optical</span><span>Paired ground truth</span></div>
+    </div>
+  </div>
+
+  <div class="export-row">
+    <button class="btn btn-primary">↓ Export SR (2.5m)</button>
+    <button class="btn">Export confidence map</button>
+    <button class="btn">Export GeoJSON</button>
+  </div>
+  </div><!-- /viewer-main -->
+  </div><!-- /viewer-layout -->
+</section>
+
+<!-- ============ PAGE: SPECTRAL & DISASTER ANALYSIS (placeholder) ============ -->
+<section class="page" id="page-spectral">
+  <div class="page-head">
+    <h2>Spectral &amp; disaster analysis</h2>
+    <p>NDVI, burn scars, flood extent and change detection on the same super-resolved Sentinel-2 stack.</p>
+  </div>
+  <div style="border:1px dashed var(--border-strong);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text-3);font-size:13px;">
+    This module is coming soon — it will reuse the AOI and HAT output from the Super-resolution tab.
+  </div>
+</section>
+
+<!-- ============ PAGE 2: CONFIGURATION ============ -->
+<section class="page" id="page-config">
+  <div class="page-head">
+    <h2>Configuration</h2>
+    <p>Set up the inference engine before running super-resolution. Area selection now lives in the Viewer tab.</p>
+  </div>
+
+  <div class="config-grid" style="grid-template-columns:1fr;max-width:480px;">
+    <div class="config-col">
+      <h3>Model &amp; inference engine</h3>
+      <div class="form-group">
+        <label>Architecture</label>
+        <select><option>HAT — Hybrid Attention Transformer</option></select>
+      </div>
+      <div class="form-group">
+        <label>Target resolution</label>
+        <select><option>4× upscaling — 10.0m → 2.5m (sub-4m GSD)</option></select>
+      </div>
+      <div class="form-group">
+        <label>Acquisition mode</label>
+        <div class="toggle-group" style="width:100%;">
+          <span class="active" style="flex:1;text-align:center;">Single pass</span>
+          <span style="flex:1;text-align:center;">Multi-temporal (3-pass)</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="slider-row"><label>MC-dropout passes</label><span class="val">8 passes</span></div>
+        <input type="range" min="1" max="16" value="8">
+      </div>
+      <span class="link-action">↑ Upload custom GeoTIFF / tile</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAGE 3: ANALYTICS ============ -->
+<section class="page" id="page-analytics">
+  <div class="page-head">
+    <h2>Analytics &amp; provenance</h2>
+    <p>Uncertainty, validation against ground truth, detected infrastructure, and the inference chain of custody.</p>
+  </div>
+
+  <div class="analytics-grid">
+    <div class="acard">
+      <div class="acard-head">
+        <h3>Hallucination &amp; uncertainty</h3>
+        <span class="pill-badge teal">The USP</span>
+      </div>
+      <div class="tile-grid">
+        <div class="tile"><div class="v good">97.66%</div><div class="l">Avg. confidence score</div></div>
+        <div class="tile"><div class="v">0</div><div class="l">MC-dropout variance</div></div>
+        <div class="tile"><div class="v">0.84°</div><div class="l">Spectral angle (SAM)</div></div>
+        <div class="tile"><div class="v">0.0008</div><div class="l">Cycle-consistency MAE</div></div>
+      </div>
+      <p class="acard-note">Verified via ESA opensr-test and Monte-Carlo dropout variance, so judges can check whether fine boundaries are physically observed by Sentinel-2 or synthesised by the model.</p>
+    </div>
+
+    <div class="acard">
+      <div class="acard-head">
+        <h3>Validation vs. HR reference</h3>
+        <span class="pill-badge violet">Paired ground truth</span>
+      </div>
+      <div class="tile-grid">
+        <div class="tile"><div class="v">12.81<span class="unit">dB</span></div><div class="l">PSNR vs HR reference</div></div>
+        <div class="tile"><div class="v">0.0742</div><div class="l">SSIM structure index</div></div>
+        <div class="tile"><div class="v">17.45</div><div class="l">ERGAS synthesis error</div></div>
+        <div class="tile"><div class="v">912<span class="unit">ms</span></div><div class="l">Inference latency (CPU)</div></div>
+      </div>
+      <div class="kv-strip">
+        <div>AROSICS shift (x, y)<b>−32px, −32px</b></div>
+        <div>Reference source<b>WorldStrat · SPOT 1.5m</b></div>
+        <div>Last validated<b>2026-09-14</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="acard full" style="margin-bottom:24px;">
+    <div class="acard-head">
+      <h3>Detected infrastructure</h3>
+      <span class="pill-badge amber">Multi-class extraction</span>
+    </div>
+    <div class="tile-grid tile-grid-3">
+      <div class="tile"><div class="v">572</div><div class="l">Building footprints</div></div>
+      <div class="tile"><div class="v">0.65<span class="unit">km</span></div><div class="l">Road corridors</div></div>
+      <div class="tile"><div class="v good">98.2%</div><div class="l">Detection confidence</div></div>
+    </div>
+    <p class="acard-note">Full vector topology exported as GeoJSON with per-feature confidence metrics for downstream GIS analysis.</p>
+  </div>
+
+  <div class="acard full">
+    <div class="acard-head">
+      <h3>Pipeline verification</h3>
+      <span class="pill-badge neutral">Live provenance</span>
+    </div>
+    <div class="pipeline-grid">
+      <div class="pcell"><div class="l">Active checkpoint</div><div class="v">hat_worldstrat_x4.onnx</div></div>
+      <div class="pcell"><div class="l">Dropout mode</div><div class="v">MC-active · 8 passes</div></div>
+      <div class="pcell"><div class="l">Array dimensions</div><div class="v">128×128 → 512×512</div></div>
+      <div class="pcell"><div class="l">Stage 2 sharpening</div><div class="v">None (raw output)</div></div>
+      <div class="pcell"><div class="l">Ground truth reference</div><div class="v">WorldStrat · SPOT 1.5m</div></div>
+      <div class="pcell"><div class="l">Temporal fusion</div><div class="v">Single-pass (default)</div></div>
+      <div class="pcell"><div class="l">Blockchain provenance</div><div class="v">v3 · 0x0194ca74…</div></div>
+      <div class="pcell"><div class="l">Per-pixel variance</div><div class="v">min 0.0 · max 0.0</div></div>
+    </div>
+    <div class="chain-row">
+      <p>On-chain provenance: <b>sub-11cm geo-tagging</b> · SHA-256 anchored to Polygon Amoy testnet, chain ID 80002</p>
+      <button class="btn">View on explorer</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FULL MAP MODAL ============ -->
+<div class="map-modal-overlay" id="map-modal-overlay">
+  <div class="map-modal">
+    <div class="map-modal-head">
+      <h3>Choose location</h3>
+      <button class="map-modal-close" id="map-modal-close">✕</button>
+    </div>
+    <div class="map-modal-toolbar">
+      <div class="map-search">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="Search a place — e.g. Varanasi, India">
+      </div>
+      <div class="divider"></div>
+      <div class="coord-inline">
+        <input type="text" placeholder="Lat" value="25.3200">
+        <input type="text" placeholder="Lon" value="82.9750">
+        <button class="btn btn-sm">Jump</button>
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-sm" id="map-modal-draw">▭ Draw bounding box</button>
+    </div>
+    <div class="map-modal-body">
+      <div class="map-canvas">
+        <div class="pin-lg"></div>
+        <div class="bbox"></div>
+      </div>
+      <div class="map-zoom-controls">
+        <button>+</button>
+        <button>–</button>
+      </div>
+    </div>
+    <div class="map-modal-foot">
+      <span class="coords-readout">Selected: Lat 25.3200 · Lon 82.9750 · bbox ~ 6.2 km × 4.1 km</span>
+      <div style="display:flex;gap:10px;">
+        <button class="btn" id="map-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="map-modal-apply">Apply selection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // page tabs (Viewer / Configuration / Analytics)
+  document.querySelectorAll('nav.tabs button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('page-'+btn.dataset.page).classList.add('active');
+    });
+  });
+
+  // header mode pills (Super-resolution vs Spectral & disaster)
+  document.querySelectorAll('.mode-pill').forEach(pill=>{
+    pill.addEventListener('click',()=>{
+      document.querySelectorAll('.mode-pill').forEach(p=>p.classList.remove('active'));
+      pill.classList.add('active');
+      document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      if(pill.dataset.mode==='spectral'){
+        document.getElementById('page-spectral').classList.add('active');
+      }else{
+        document.querySelector('nav.tabs button[data-page="viewer"]').classList.add('active');
+        document.getElementById('page-viewer').classList.add('active');
+      }
+    });
+  });
+
+  // split slider vs side-by-side toggle
+  document.getElementById('view-toggle').querySelectorAll('span').forEach(s=>{
+    s.addEventListener('click',()=>{
+      document.getElementById('view-toggle').querySelectorAll('span').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+      const split=s.dataset.view==='split';
+      document.getElementById('split-view').style.display=split?'block':'none';
+      document.querySelector('.split-legend').style.display=split?'flex':'none';
+      document.getElementById('grid-view').style.display=split?'none':'grid';
+    });
+  });
+
+  // draggable split handle
+  (function(){
+    const view=document.getElementById('split-view');
+    const handle=document.getElementById('split-handle');
+    const over=document.getElementById('split-over');
+    let dragging=false;
+    function setPct(clientX){
+      const rect=view.getBoundingClientRect();
+      let pct=((clientX-rect.left)/rect.width)*100;
+      pct=Math.max(4,Math.min(96,pct));
+      handle.style.left=pct+'%';
+      over.style.clipPath='inset(0 0 0 '+pct+'%)';
+    }
+    handle.addEventListener('mousedown',()=>{dragging=true;});
+    window.addEventListener('mouseup',()=>{dragging=false;});
+    window.addEventListener('mousemove',(e)=>{if(dragging)setPct(e.clientX);});
+    view.addEventListener('click',(e)=>{ if(e.target.closest('.split-grip')) return; setPct(e.clientX); });
+  })();
+
+  document.querySelectorAll('.aoi-card').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.aoi-card').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.config-grid .toggle-group, .toolbar-left .toggle-group:not(#view-toggle)').forEach(g=>{
+    g.querySelectorAll('span').forEach(s=>{
+      s.addEventListener('click',()=>{
+        g.querySelectorAll('span').forEach(x=>x.classList.remove('active'));
+        s.classList.add('active');
+      });
+    });
+  });
+  document.querySelectorAll('input[type=range]').forEach(r=>{
+    r.addEventListener('input',()=>{
+      const row=r.closest('.slider-row');
+      if(row) row.querySelector('.val').textContent = r.value + ' passes';
+    });
+  });
+  // full map modal
+  (function(){
+    const overlay=document.getElementById('map-modal-overlay');
+    const open=()=>overlay.classList.add('open');
+    const close=()=>overlay.classList.remove('open');
+    document.getElementById('open-map-modal').addEventListener('click',open);
+    document.getElementById('open-map-modal-2').addEventListener('click',open);
+    document.getElementById('map-modal-close').addEventListener('click',close);
+    document.getElementById('map-modal-cancel').addEventListener('click',close);
+    document.getElementById('map-modal-apply').addEventListener('click',close);
+    overlay.addEventListener('click',(e)=>{ if(e.target===overlay) close(); });
+  })();
+</script>
+
+</body>
+</html>
