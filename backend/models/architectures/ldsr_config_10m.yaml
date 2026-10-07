@@ -1,0 +1,49 @@
+# ESA OpenSR LDSR-S2 Configuration for 10m Sentinel-2 Super-Resolution
+# Source: ESAOpenSR/opensr-model (config_10m.yaml)
+
+# General Settings
+apply_normalization: false
+ckpt_version: "opensr-ldsrs2_v1_0_0.ckpt"
+encode_conditioning: true
+
+# Diffusion and Sampling Settings
+denoiser_settings:
+  linear_start: 0.0001 # noise start
+  linear_end: 0.0155 # noise end
+  timesteps: 1000 # Timesteps model was trained on
+  parameterization: "eps" # ["eps" or "x0"]
+  sampling_eta: 0.95 # 0.0 to 1.0 -> closer to 1.0 is more deterministic
+  sampling_temperature: 1.0
+  sampling_steps: 15 # Optimized for responsive inference on CPU; configurable up to 100
+
+# Autoencoder Settings
+first_stage_config:
+  embed_dim: 4
+  double_z: true
+  z_channels: 4
+  resolution: 512
+  in_channels: 4
+  out_ch: 4
+  ch: 128
+  ch_mult: [1, 2, 4]
+  num_res_blocks: 2
+  attn_resolutions: []
+  dropout: 0.0
+
+# Denoising UNet Settings
+cond_stage_config:
+  image_size: 128
+  in_channels: 8
+  model_channels: 160
+  out_channels: 4
+  num_res_blocks: 2
+  attention_resolutions: [16, 8]
+  channel_mult: [1, 2, 2, 4]
+  num_head_channels: 32
+
+# Other Settings
+other:
+  concat_mode: true
+  cond_stage_trainable: false
+  first_stage_key: "image"
+  cond_stage_key: "LR_image"
