@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETRA — Super Resolution Mapping (SRM) | Sentinel-2 (10m → 2.5m)</title>
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/png" href="/static/assets/logo.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="/static/assets/favicon.png">
+    <link rel="shortcut icon" href="/static/assets/logo.png">
+    <link rel="apple-touch-icon" href="/static/assets/logo.png">
+    <!-- Google Fonts: IBM Plex Sans + IBM Plex Mono + legacy fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Leaflet & Leaflet.draw CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+    <link rel="stylesheet" href="/static/styles.css?v=20261001_v9">
+    <link rel="stylesheet" href="/static/netra-landing.css?v=20261001_v9">
+    <style>
+        /* Embedded Aerospace Coordinates Bar Protection */
+        .coord-search-bar {
+            display: flex !important;
+            align-items: center !important;
+            background: rgba(10, 15, 22, 0.95) !important;
+            border: 1px solid rgba(0, 229, 153, 0.28) !important;
+            border-radius: 7px !important;
+            padding: 3px 4px !important;
+            margin-top: 0.5rem !important;
+            gap: 5px !important;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+            transition: all 0.2s ease !important;
+        }
+        .coord-search-bar:focus-within {
+            border-color: #00E599 !important;
+            box-shadow: 0 0 10px rgba(0, 229, 153, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+        }
+        .coord-input-wrap {
+            display: flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+            flex: 1 !important;
+            background: rgba(255, 255, 255, 0.04) !important;
+            padding: 4px 7px !important;
+            border-radius: 5px !important;
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            min-width: 0 !important;
+        }
+        .coord-input-wrap:focus-within {
+            background: rgba(0, 229, 153, 0.06) !important;
+            border-color: rgba(0, 229, 153, 0.4) !important;
+        }
+        .coord-prefix {
+            font-size: 0.65rem !important;
+            font-weight: 700 !important;
+            color: #00E599 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            user-select: none !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            flex-shrink: 0 !important;
+        }
+        .coord-text-input {
+            width: 100% !important;
+            background: transparent !important;
+            border: none !important;
+            outline: none !important;
+            color: #f3f4f6 !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 0.74rem !important;
+            font-weight: 500 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            min-width: 0 !important;
+        }
+        .coord-text-input::placeholder {
+            color: #64748b !important;
+        }
+        .coord-separator {
+            color: rgba(255, 255, 255, 0.2) !important;
+            font-size: 0.72rem !important;
+            user-select: none !important;
+            font-weight: 300 !important;
+            flex-shrink: 0 !important;
+        }
+        .btn-coord-jump {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 3px !important;
+            background: linear-gradient(135deg, rgba(0, 229, 153, 0.22), rgba(0, 204, 136, 0.28)) !important;
+            border: 1px solid rgba(0, 229, 153, 0.45) !important;
+            color: #00E599 !important;
+            padding: 0 9px !important;
+            height: 27px !important;
+            border-radius: 5px !important;
+            font-size: 0.72rem !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease !important;
+            flex-shrink: 0 !important;
+        }
+        .btn-coord-jump:hover {
+            background: #00E599 !important;
+            color: #04080c !important;
+            box-shadow: 0 0 12px rgba(0, 229, 153, 0.6) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        /* Building Footprints & Verified Cross-Check UI Styles */
+        .metric-tile-purple {
+            border-color: rgba(168, 85, 247, 0.35) !important;
+            background: rgba(168, 85, 247, 0.08) !important;
+        }
+        .metric-val-purple {
+            color: #c084fc !important;
+            text-shadow: 0 0 12px rgba(192, 132, 252, 0.45);
+        }
+        .card-badge-purple {
+            background: rgba(168, 85, 247, 0.18) !important;
+            border: 1px solid rgba(168, 85, 247, 0.5) !important;
+            color: #d8b4fe !important;
+        }
+        .pill-dot-purple {
+            background: #a855f7 !important;
+            box-shadow: 0 0 8px #a855f7 !important;
+        }
+        .callout-box-purple {
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.78rem;
+            color: #e9d5ff;
+        }
+        .callout-box-slate {
+            background: rgba(100, 116, 139, 0.1);
+            border: 1px dashed rgba(148, 163, 184, 0.35);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.78rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =============================================================
+         NETRA - AERO-GRADE LANDING PAGE
+         Theme: Sentinel-2 10m to 2.5m Super-Resolution & Trust
+         ============================================================= -->
+    <div id="landing-page" class="netra-landing-root">
+        
+        <!-- Sticky Navigation Bar -->
+        <nav class="netra-navbar">
+            <a href="#" class="netra-nav-brand">
+                <div class="netra-nav-brand-logo">
+                    <img src="/static/assets/logo.png" alt="NETRA Logo" class="netra-nav-logo-img">
+                </div>
+                <div class="netra-brand-titles">
+                    <span class="brand-name">NETRA</span>
+                    <span class="brand-tagline">Sharper Earth. Safer Tomorrow.</span>
+                </div>
+            </a>
+
+            <ul class="netra-nav-menu">
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#technology">Technology</a></li>
+                <li><a href="#use-cases">Use Cases</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+
+            <div class="netra-nav-action">
+                <button type="button" id="btn-nav-demo" class="netra-btn-nav-demo">
+                    Open Demo <span>&rarr;</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <header class="netra-hero-section">
+            <div class="netra-hero-vignette"></div>
+            <div class="netra-hero-vignette-bottom"></div>
+
+            <div class="netra-hero-grid">
+                <!-- Left Hero Column -->
+                <div class="netra-hero-left">
+                    <div class="netra-hero-badge-row">
+                        <span class="badge-tag-hacknation">HACKNATION</span>
+                        <span class="badge-tag-beneficiary">For ISRO / NESAC / Ministry of DoNER</span>
+                    </div>
+
+                    <h1 class="netra-hero-title">
+                        AI-Powered Satellite<br>
+                        Imagery for a Safer,<br>
+                        <span class="netra-title-gradient">Smarter Bharat</span>
+                    </h1>
+
+                    <p class="netra-hero-desc">
+                        <strong>NETRA</strong> converts free Sentinel-2 satellite imagery (10m) into <strong>4× ultra-sharp <span class="text-mint">2.5m resolution</span></strong> visuals with AI, while ensuring zero <strong>hallucinations</strong> through scientific uncertainty detection and blockchain-backed authenticity.
+                    </p>
+
+                    <div class="netra-hero-actions">
+                        <button type="button" id="btn-explore-demo" class="netra-btn-primary">
+                            Explore Live Demo <span>&rarr;</span>
+                        </button>
+                        <a href="#about" class="netra-btn-secondary" id="btn-view-details">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            View Project Details
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Hero Column (Interactive Comparison Card) -->
+                <div class="netra-hero-right">
+                    <div class="netra-card-wrapper">
+                        <div class="netra-compare-card">
+                            <div class="netra-compare-header">
+                                <div class="compare-header-item">
+                                    <span class="compare-title">Sentinel-2 (10m)</span>
+                                    <span class="compare-tag tag-gray">Blurry / Low Detail</span>
+                                </div>
+                                <div class="compare-header-item right-align">
+                                    <span class="compare-title">NETRA (2.5m)</span>
+                                    <span class="compare-tag tag-green">4× Sharper / High Detail</span>
+                                </div>
+                            </div>
+
+                            <div class="netra-slider-container" id="netra-hero-slider" title="Drag or hover left and right to compare 10m vs 2.5m">
+                                <!-- Base 2.5m Sharp Image (Right Layer) -->
+                                <img src="/static/assets/satellite_sr_2.5m.jpg?v=20261001_v2" alt="NETRA 2.5m Super-Resolved Satellite Tile" class="netra-img-base">
+                                
+                                <!-- Top 10m Blurry/Pixelated Image (Left Layer - clipped) -->
+                                <img src="/static/assets/satellite_lr_10m.jpg?v=20261001_v2" alt="Sentinel-2 10m Native Blurry Satellite Tile" class="netra-img-lr" id="netra-img-lr">
+
+                                <!-- Overlay Corner Badges -->
+                                <div class="netra-slider-badge badge-left">10m GSD</div>
+                                <div class="netra-slider-badge badge-right">2.5m GSD</div>
+
+                                <!-- Central Divider & Draggable Handle -->
+                                <div class="netra-slider-handle" id="netra-slider-handle">
+                                    <div class="netra-handle-knob">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="15 18 9 12 15 6"></polyline>
+                                        </svg>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Section 2: About & Purpose -->
+        <section id="about" class="netra-section">
+            <div class="netra-section-header">
+                <span class="netra-section-kicker">Strategic Earth Observation Gap</span>
+                <h2 class="netra-section-title">Bridging the Resolution Divide for North-East India</h2>
+                <p class="netra-section-desc">
+                    ESA's Copernicus Sentinel-2 offers free 5-day global revisits, but at 10m GSD, village road networks, narrow bridge spans, and cadastral parcel lines are blurred. Commercial high-res satellites cost thousands of dollars per pass. NETRA delivers commercial-grade sub-4m clarity at zero incremental cost.
+                </p>
+            </div>
+
+            <div class="netra-stats-grid">
+                <div class="netra-stat-card">
+                    <div class="netra-stat-num">16×</div>
+                    <div class="netra-stat-label">Pixel Density Boost</div>
+                    <div class="netra-stat-sub">4× spatial upscaling from 10m down to 2.5m Ground Sample Distance</div>
+                </div>
+                <div class="netra-stat-card">
+                    <div class="netra-stat-num">0%</div>
+                    <div class="netra-stat-label">Hallucination Tolerance</div>
+                    <div class="netra-stat-sub">Epistemic MC-Dropout variance + ESA opensr-test cycle consistency check</div>
+                </div>
+                <div class="netra-stat-card">
+                    <div class="netra-stat-num">&lt;3.8s</div>
+                    <div class="netra-stat-label">Edge Inference Latency</div>
+                    <div class="netra-stat-sub">Ultra-fast ONNX and PyTorch runtime optimized for field laptops & servers</div>
+                </div>
+                <div class="netra-stat-card">
+                    <div class="netra-stat-num">Sub-11cm</div>
+                    <div class="netra-stat-label">Blockchain Anchor</div>
+                    <div class="netra-stat-sub">SHA-256 tile hash and coordinates immutably secured on Polygon Amoy</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Technology Architecture -->
+        <section id="technology" class="netra-section" style="background: rgba(10, 16, 22, 0.45); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <div class="netra-section-header">
+                <span class="netra-section-kicker">Scientific Trust Layer</span>
+                <h2 class="netra-section-title">The Four Pillars of Hallucination-Aware AI</h2>
+                <p class="netra-section-desc">
+                    Commercial GANs hallucinate fake roads and buildings. NETRA mathematically protects geospatial analysts and defense cartographers with active confidence bounds.
+                </p>
+            </div>
+
+            <div class="netra-cards-grid-3">
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Bayesian MC-Dropout</h3>
+                    <p class="netra-feature-desc">Executes 8 stochastic forward passes with active spatial dropout to calculate per-pixel variance σ². Divergent inferences immediately trigger amber/red uncertainty warnings.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>Epistemic Variance Engine</span>
+                </div>
+
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">ESA Cycle-Consistency</h3>
+                    <p class="netra-feature-desc">Downsamples the super-resolved 2.5m raster back to 10m to enforce physical true-radiance conservation against Sentinel-2 input, penalized via Spectral Angle Mapper (SAM).</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>Physical Radiance Check</span>
+                </div>
+
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Optical Cloud Shield</h3>
+                    <p class="netra-feature-desc">Multi-spectral thresholding isolates thick clouds, forces confidence strictly to 0%, eliminates 100% of false infrastructure detections, and applies slate hatching.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>Zero Cloud Hallucinations</span>
+                </div>
+
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Polygon Amoy Provenance</h3>
+                    <p class="netra-feature-desc">Every enhanced GeoTIFF is cryptographically hashed with SHA-256 and anchored to Polygon Amoy Testnet (Chain ID 80002) for tamper-proof legal admissibility in court.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>Smart Contract 0x...</span>
+                </div>
+
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Master Model Zoo</h3>
+                    <p class="netra-feature-desc">Choose between EVOLAND WorldStrat (Official ONNX default), SRM-Net (Real-time uncertainty), HAT (Transformer), CARN (ESA baseline), and Real-ESRGAN.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>Multi-Model Architecture</span>
+                </div>
+
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Automated Vectorizer</h3>
+                    <p class="netra-feature-desc">Detects roads, bridges, and building footprints from 2.5m imagery and exports clean, georeferenced GeoJSON and Shapefiles ready for QGIS and ArcGIS.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>GIS Vector Extraction</span>
+                </div>
+            </div>
+
+            <!-- Master Benchmark Catalog Table -->
+            <div class="netra-table-container">
+                <div class="netra-table-header-bar">
+                    <div class="table-bar-left">
+                        <div class="table-bar-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="table-bar-kicker">NEURAL ARCHITECTURE BENCHMARK MATRIX</span>
+                            <h4 class="table-bar-title">Comparative Performance, Radiometric Fidelity &amp; Hallucination Audits</h4>
+                        </div>
+                    </div>
+                    <div class="table-bar-right">
+                        <span class="table-status-chip">
+                            <span class="pulse-emerald"></span>
+                            Verified on Sentinel-2 MSI (10m &rarr; 2.5m)
+                        </span>
+                    </div>
+                </div>
+
+                <table class="netra-benchmark-table">
+                    <thead>
+                        <tr>
+                            <th>Model Architecture</th>
+                            <th>Category</th>
+                            <th>Resolution GSD</th>
+                            <th>Bands</th>
+                            <th>Operational Role</th>
+                            <th>Trust Profile</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="model-title-wrap">
+                                    <span class="model-dot"></span>
+                                    <strong>EVOLAND WorldStrat</strong>
+                                </div>
+                            </td>
+                            <td>ESRGAN ONNX Runtime</td>
+                            <td><span class="netra-table-badge badge-primary"><span class="badge-inner-dot"></span>4× (10m &rarr; 2.5m)</span></td>
+                            <td>4-Band (B02, B03, B04, B08)</td>
+                            <td>Official Production Default</td>
+                            <td><span class="netra-table-badge badge-primary"><span class="badge-inner-dot"></span>Physically Grounded</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="model-title-wrap">
+                                    <span class="model-dot"></span>
+                                    <strong>SRM-Net (MC-Dropout)</strong>
+                                </div>
+                            </td>
+                            <td>Residual Channel Attention</td>
+                            <td><span class="netra-table-badge badge-primary"><span class="badge-inner-dot"></span>4× (10m &rarr; 2.5m)</span></td>
+                            <td>3-Band (RGB)</td>
+                            <td>Real-Time Interactive Heatmap</td>
+                            <td><span class="netra-table-badge badge-primary"><span class="badge-inner-dot"></span>&lt;3.8s Bayesian Variance</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="model-title-wrap">
+                                    <span class="model-dot" style="background:var(--netra-cyan);box-shadow:0 0 8px var(--netra-cyan);"></span>
+                                    <strong>HAT Transformer</strong>
+                                </div>
+                            </td>
+                            <td>Window Multi-Head Attention</td>
+                            <td><span class="netra-table-badge badge-research"><span class="badge-inner-dot"></span>4× (10m &rarr; 2.5m)</span></td>
+                            <td>3-Band (RGB)</td>
+                            <td>Experimental Custom Transformer</td>
+                            <td><span class="netra-table-badge badge-research"><span class="badge-inner-dot"></span>High-Fidelity Attention</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="model-title-wrap">
+                                    <span class="model-dot" style="background:#CBD5E1;box-shadow:0 0 8px #CBD5E1;"></span>
+                                    <strong>CARN Network</strong>
+                                </div>
+                            </td>
+                            <td>Cascading Residual CNN</td>
+                            <td><span class="netra-table-badge badge-baseline"><span class="badge-inner-dot"></span>2× / 4× (5m / 2.5m)</span></td>
+                            <td>10 Sentinel-2 Bands</td>
+                            <td>ESA EvoLand Baseline</td>
+                            <td><span class="netra-table-badge badge-baseline"><span class="badge-inner-dot"></span>Conservative Standard</span></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="model-title-wrap">
+                                    <span class="model-dot" style="background:#ef4444;box-shadow:0 0 8px #ef4444;"></span>
+                                    <strong>Real-ESRGAN</strong>
+                                </div>
+                            </td>
+                            <td>RRDBNet Generator</td>
+                            <td><span class="netra-table-badge badge-baseline"><span class="badge-inner-dot"></span>4× (10m &rarr; 2.5m)</span></td>
+                            <td>3-Band (RGB)</td>
+                            <td>Perceptual Benchmark</td>
+                            <td><span class="netra-table-badge badge-risk">&#x26A0;&#xFE0F; High Hallucination Risk</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 4: Use Cases -->
+        <section id="use-cases" class="netra-section">
+            <div class="netra-section-header">
+                <span class="netra-section-kicker">Deployment Scenarios</span>
+                <h2 class="netra-section-title">Critical Governance & Defense Applications</h2>
+                <p class="netra-section-desc">
+                    Engineered to meet the exact operational requirements of the Ministry of Development of North Eastern Region (DoNER), NESAC, and ISRO.
+                </p>
+            </div>
+
+            <div class="netra-cards-grid-3">
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Cadastral Land Mapping</h3>
+                    <p class="netra-feature-desc">Demarcate micro-plot boundaries, rural settlements, and village assets without incurring millions of rupees in commercial satellite procurement.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>DoNER Cadastral Survey</span>
+                </div>
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Border Infrastructure</h3>
+                    <p class="netra-feature-desc">Detect narrow bridges, strategic mountain passes, and river crossings across Arunachal Pradesh, Assam, and Himalayan terrain with sub-4m clarity.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>Strategic Security</span>
+                </div>
+                <div class="netra-feature-card">
+                    <h3 class="netra-feature-title">Disaster Response &amp; Floods</h3>
+                    <p class="netra-feature-desc">Rapidly analyze inundated road arteries and severed connectivity during North-East monsoon floods with 5-day Sentinel-2 revisit updates.</p>
+                    <span class="netra-feature-tag"><span class="tag-dot"></span>NESAC Disaster Division</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Live Demo Launcher -->
+        <section id="demo" class="netra-section">
+            <div class="netra-cta-box">
+                <span class="netra-section-kicker" style="color: #00E599;">Interactive Geospatial Console</span>
+                <h2 class="netra-cta-title">Ready to Experience Sentinel-2 Super-Resolution?</h2>
+                <p class="netra-cta-desc">
+                    Select a featured region below or launch the open interactive map console to test Sentinel-2 super-resolution, uncertainty heatmaps, and blockchain verification.
+                </p>
+
+                <!-- Quick Preset Cards -->
+                <div class="netra-presets-grid">
+                    <div class="netra-preset-card" data-preset="varanasi_river">
+                        <span class="netra-preset-card-title">🌊 Varanasi River Bend</span>
+                        <span class="netra-preset-card-sub">Winding Ganges waterway, ghats & bridges</span>
+                        <span class="netra-preset-card-tag">Preset #1 &rarr;</span>
+                    </div>
+                    <div class="netra-preset-card" data-preset="punjab_agri">
+                        <span class="netra-preset-card-title">🌾 Punjab Farmlands</span>
+                        <span class="netra-preset-card-sub">Cadastral agricultural parcel demarcation</span>
+                        <span class="netra-preset-card-tag">Preset #2 &rarr;</span>
+                    </div>
+                    <div class="netra-preset-card" data-preset="delhi_ncr">
+                        <span class="netra-preset-card-title">🏙️ Delhi NCR Grid</span>
+                        <span class="netra-preset-card-sub">Dense urban infrastructure & road network</span>
+                        <span class="netra-preset-card-tag">Preset #3 &rarr;</span>
+                    </div>
+                    <div class="netra-preset-card" data-preset="custom">
+                        <span class="netra-preset-card-title">🗺️ Custom AOI</span>
+                        <span class="netra-preset-card-sub">Draw any bounding box on live globe</span>
+                        <span class="netra-preset-card-tag">Draw AOI &rarr;</span>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-open-console" class="netra-btn-primary" style="font-size: 1.1rem; padding: 1.1rem 2.6rem;">
+                    Launch Full Geospatial Console <span>&rarr;</span>
+                </button>
+            </div>
+        </section>
+
+
+
+        <!-- Footer -->
+        <footer id="contact" class="netra-footer">
+            <div class="netra-footer-content">
+                <div class="netra-footer-left">
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <img src="/static/assets/logo.png" alt="NETRA Logo" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(0,229,153,0.5));">
+                        <span style="font-weight:800;font-size:1.3rem;letter-spacing:0.1em;color:#FFFFFF;">NETRA</span>
+                        <span style="color:#00E599;font-size:0.75rem;background:rgba(0,229,153,0.15);padding:2px 8px;border-radius:4px;font-family:var(--netra-font-mono);">HACKNATION</span>
+                    </div>
+                    <span class="netra-footer-copy">Networked Earth Trust Record Architecture — Hallucination-Aware Super Resolution Mapping</span>
+                </div>
+
+                <div class="netra-footer-links">
+                    <a href="#about">About</a>
+                    <a href="#technology">Technology</a>
+                    <a href="#use-cases">Use Cases</a>
+                    <a href="https://dataspace.copernicus.eu/" target="_blank" rel="noopener">Copernicus CDSE</a>
+                    <a href="https://amoy.polygonscan.com/" target="_blank" rel="noopener">Polygon Amoy</a>
+                </div>
+            </div>
+
+            <div class="netra-footer-bottom">
+                <span>© 2026 NETRA — Developed for Ministry of DoNER / NESAC / ISRO.</span>
+                <span style="font-family:var(--netra-font-mono);font-size:0.75rem;color:var(--netra-mint);">Sentinel-2 L2A (10m) &rarr; NETRA (2.5m GSD)</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="dashboard-container" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+        <div class="brand">
+            <div class="logo-badge" title="NETRA">
+                <img src="/static/assets/logo.png" alt="NETRA Logo" class="netra-header-logo">
+            </div>
+            <div class="brand-text">
+                <h1>NETRA <span>— Sentinel-2</span></h1>
+                <p class="subtitle">Deep Learning Super-Resolution (10m → 2.5m) with Hallucination-Aware Uncertainty USP
+                </p>
+            </div>
+            <button type="button" id="btn-back-to-portal" class="btn-portal-back" title="Return to NETRA Overview Portal">
+                <span>🌐</span> Portal Home
+            </button>
+        </div>
+        <!-- Top Navigation View Switcher (v4 mode pills) -->
+        <nav class="top-nav-tabs" aria-label="Main Application Views">
+            <button type="button" id="nav-btn-sr" class="top-nav-btn active" title="Super-Resolution, Uncertainty & Infrastructure" onclick="switchTopView('sr')">
+                <span class="top-nav-icon">🛰️</span>
+                <span class="top-nav-title">Super-Resolution &amp; Trust</span>
+            </button>
+            <button type="button" id="nav-btn-spectral" class="top-nav-btn" title="Multi-Band Spectral Indices & Disaster Analysis" onclick="switchTopView('spectral')">
+                <span class="top-nav-icon">🌱</span>
+                <span class="top-nav-title">Spectral &amp; Disaster Analysis</span>
+                <span class="top-nav-badge">NEW</span>
+            </button>
+        </nav>
+        <script>
+            window.switchTopView = function(viewName) {
+                console.log('[GEO-SRM] Immediate switchTopView to:', viewName);
+                var btnSr = document.getElementById("nav-btn-sr");
+                var btnSpectral = document.getElementById("nav-btn-spectral");
+                var srContainer = document.getElementById("view-sr-mapping");
+                var spectralContainer = document.getElementById("view-spectral-analysis");
+
+                if (viewName === "spectral") {
+                    if (btnSr) btnSr.classList.remove("active");
+                    if (btnSpectral) btnSpectral.classList.add("active");
+                    if (srContainer) {
+                        srContainer.classList.add("hidden");
+                        srContainer.style.setProperty("display", "none", "important");
+                    }
+                    if (spectralContainer) {
+                        spectralContainer.classList.remove("hidden");
+                        spectralContainer.style.setProperty("display", "block", "important");
+                    }
+                } else {
+                    if (btnSpectral) btnSpectral.classList.remove("active");
+                    if (btnSr) btnSr.classList.add("active");
+                    if (spectralContainer) {
+                        spectralContainer.classList.add("hidden");
+                        spectralContainer.style.setProperty("display", "none", "important");
+                    }
+                    if (srContainer) {
+                        srContainer.classList.remove("hidden");
+                        srContainer.style.setProperty("display", "block", "important");
+                    }
+                }
+
+                if (typeof window.onViewSwitched === "function") {
+                    window.onViewSwitched(viewName);
+                } else {
+                    window._pendingViewSwitch = viewName;
+                }
+            };
+        </script>
+
+        <div class="header-actions">
+            <div class="system-status">
+                <span class="status-indicator active"></span>
+                <span class="status-label">Copernicus CDSE Linked</span>
+            </div>
+            <button id="btn-open-blockchain" type="button" class="btn-blockchain-badge" title="Polygon Amoy Blockchain Provenance & Version Chain">
+                <span class="chain-dot-purple"></span>
+                <span class="chain-label">Polygon Amoy</span>
+                <span class="chain-version-tag" id="header-chain-version">v1 Verified</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- v4 Sub-Tab Navigation -->
+    <nav class="dash-tabs" id="dash-tabs">
+        <button class="active" data-dash-page="viewer"><span class="tab-n">01</span>Viewer</button>
+        <button data-dash-page="config"><span class="tab-n">02</span>Configuration</button>
+        <button data-dash-page="analytics"><span class="tab-n">03</span>Analytics &amp; provenance</button>
+    </nav>
+
+    <!-- ======== DASH PAGE 1: VIEWER (SR + Spectral views) ======== -->
+    <div class="dash-page active" id="dash-page-viewer">
+
+    <!-- View 1: Super-Resolution & Trust Workspace -->
+    <!-- View 1: Super-Resolution & Trust Workspace (v6 layout) -->
+
+    <div id="view-sr-mapping" class="app-view-container active">
+
+      <div class="viewer-layout">
+
+
+
+        <!-- Left column: AOI rail only -->
+
+        <aside class="aoi-rail" aria-label="Area of Interest selection">
+
+          <h3 class="aoi-rail-heading">Area of interest</h3>
+          <div class="presets-container" id="presets-list">
+            <!-- Presets injected by JS -->
+          </div>
+
+
+
+          <div class="map-wrapper">
+
+            <div id="aoi-map"></div>
+
+
+            <button class="map-expand-btn" id="open-map-modal" title="Open full map">&#x2922; Expand map</button>
+
+          </div>
+
+
+
+          <div class="coord-search-bar" id="coords-entry-box">
+
+            <div class="coord-input-wrap">
+
+              <span class="coord-prefix">LAT</span>
+
+              <input type="text" inputmode="decimal" id="input-custom-lat" class="coord-text-input" value="30.5750" placeholder="30.5750" title="Latitude (-90 to 90)">
+
+            </div>
+
+            <div class="coord-separator">|</div>
+
+            <div class="coord-input-wrap">
+
+              <span class="coord-prefix">LON</span>
+
+              <input type="text" inputmode="decimal" id="input-custom-lon" class="coord-text-input" value="75.3300" placeholder="75.3300" title="Longitude (-180 to 180)">
+
+            </div>
+
+            <button id="btn-goto-coords" type="button" class="btn-coord-jump" title="Jump to coordinates &amp; fetch Sentinel-2 tile">
+
+              <span>Jump</span>
+
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+
+                <polyline points="9 18 15 12 9 6"></polyline>
+
+              </svg>
+
+            </button>
+
+          </div>
+
+
+
+          <button id="btn-draw-rect" type="button" class="link-action" style="display:block;margin-top:10px;">+ Draw bounding box on map</button>
+
+        </aside>
+
+
+
+        <!-- Right column: viewer main -->
+
+        <section class="viewer-main">
+
+
+
+          <div class="viewer-toolbar">
+
+            <div class="mode-toggles">
+
+              <button type="button" class="tab-btn active" id="tab-split">Split Slider</button>
+
+              <button type="button" class="tab-btn" id="tab-side">Side-by-side</button>
+
+            </div>
+
+
+
+            <div class="osd-zoom-controls">
+
+              <span class="osd-zoom-label">Zoom:</span>
+
+              <button type="button" id="btn-zoom-in"    class="btn-zoom" title="Zoom In (+)">&#x2795;</button>
+
+              <button type="button" id="btn-zoom-out"   class="btn-zoom" title="Zoom Out (-)">&#x2796;</button>
+
+              <button type="button" id="btn-zoom-reset" class="btn-zoom" title="Fit Entire Photo (Full View)">Fit</button>
+
+              <span id="zoom-level-badge" class="zoom-level-badge">1.0x</span>
+
+            </div>
+
+
+
+            <div class="usp-toolbar-controls">
+
+              <div class="toggle-pill" id="toggle-confidence-pill">
+
+                <span class="pill-dot"></span>
+
+                <span class="pill-text">USP Confidence Heatmap</span>
+
+              </div>
+
+              <div class="opacity-control" id="confidence-opacity-wrapper">
+
+                <span>Opacity</span>
+
+                <input type="range" id="slider-confidence-opacity" min="0.1" max="1.0" step="0.05" value="0.75" class="mini-slider">
+
+              </div>
+
+              <div class="toggle-pill toggle-pill-infra" id="toggle-infra-pill" title="Live AI Infrastructure Detection">
+
+                <span class="pill-dot pill-dot-purple"></span>
+
+                <span class="pill-text">Buildings &amp; Roads</span>
+
+              </div>
+
+              <div class="opacity-control" id="infra-opacity-wrapper">
+
+                <span>Opacity</span>
+
+                <input type="range" id="slider-infra-opacity" min="0.1" max="1.0" step="0.05" value="0.85" class="mini-slider">
+
+              </div>
+
+              <div class="toggle-pill toggle-pill-cloud" id="toggle-cloud-pill" title="Cloud Mask">
+
+                <span class="pill-dot pill-dot-cloud"></span>
+
+                <span class="pill-text">Cloud Mask (Occluded)</span>
+
+              </div>
+
+              <div class="opacity-control" id="cloud-opacity-wrapper">
+
+                <span>Opacity</span>
+
+                <input type="range" id="slider-cloud-opacity" min="0.1" max="1.0" step="0.05" value="0.80" class="mini-slider">
+
+              </div>
+
+            </div>
+
+
+
+            <div class="export-actions">
+
+              <button type="button" id="btn-download-sr" class="btn btn-sm btn-outline">Export SR (2.5m)</button>
+
+              <button type="button" id="btn-download-conf" class="btn btn-sm btn-outline">Export Confidence Map</button>
+
+              <button type="button" id="btn-download-geojson" class="btn btn-sm btn-outline btn-geojson-export">Export GeoJSON</button>
+
+            </div>
+
+          </div><!-- /viewer-toolbar -->
+
+
+
+          <div class="cloud-warning-banner hidden" id="cloud-warning-banner">
+
+            <div class="banner-content">
+
+              <span class="banner-icon">&#x26A0;&#xFE0F;</span>
+
+              <span id="cloud-warning-text">High cloud cover detected (&gt;20%). Optical inference suppressed in cloud regions to prevent hallucination.</span>
+
+            </div>
+
+            <button type="button" class="btn-dismiss-warning" id="btn-dismiss-cloud-warning" title="Dismiss warning">&times;</button>
+
+          </div>
+
+
+
+          <div class="cloud-warning-banner in-app-banner hidden" id="in-app-banner">
+
+            <div class="banner-content">
+
+              <span class="banner-icon" id="in-app-banner-icon">&#x1F6F0;&#xFE0F;</span>
+
+              <span id="in-app-banner-text">Notification message</span>
+
+            </div>
+
+            <button type="button" class="btn-dismiss-warning" id="btn-dismiss-in-app-banner" title="Dismiss notification">&times;</button>
+
+          </div>
+
+
+
+          <div class="canvas-viewport" id="canvas-viewport">
+
+            <!-- DEFAULT: Split-Slider View -->
+
+            <div class="split-slider-container" id="slider-container">
+
+              <div class="osd-wrapper osd-lr-wrapper" id="osd-lr-wrapper">
+
+                <div id="osd-lr" class="osd-viewport"></div>
+
+                <div class="img-tag tag-lr" id="tag-lr">Input: Sentinel-2 L2A (10m)</div>
+
+              </div>
+
+              <div class="osd-wrapper osd-sr-wrapper" id="sr-wrapper">
+
+                <div id="osd-sr" class="osd-viewport"></div>
+
+                <div class="img-tag tag-sr" id="tag-sr">Output: HAT (2.5m)</div>
+
+              </div>
+
+              <div class="slider-handle" id="slider-handle">
+
+                <div class="handle-line"></div>
+
+                <div class="handle-grip">
+
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+
+                </div>
+
+              </div>
+
+            </div><!-- /split-slider-container -->
+
+
+
+            <!-- ALTERNATE: Side-by-Side 3-pane View -->
+
+            <div class="side-by-side-container hidden" id="side-by-side-container">
+
+              <div class="side-panel">
+
+                <div class="panel-header" id="header-side-lr">Input: Sentinel-2 L2A (10m)</div>
+
+                <div class="side-osd-box" id="osd-side-lr"></div>
+
+              </div>
+
+              <div class="side-panel">
+
+                <div class="panel-header" id="header-side-sr">Output: HAT (2.5m)</div>
+
+                <div class="side-osd-box" id="osd-side-sr"></div>
+
+              </div>
+
+              <div class="side-panel">
+
+                <div class="panel-header" id="header-side-hr">Reference: Ground Truth HR (1.5m)</div>
+
+                <div class="side-osd-box" id="osd-side-hr"></div>
+
+              </div>
+
+            </div><!-- /side-by-side-container -->
+
+
+
+            <div class="loading-scrim hidden" id="loading-scrim">
+
+              <div class="spinner-core"></div>
+
+              <div class="loading-text">Processing Super-Resolution &amp; MC-Dropout Passes...</div>
+
+              <div class="loading-sub">Benchmarking spectral consistency with opensr-test</div>
+
+            </div>
+
+          </div><!-- /canvas-viewport -->
+
+
+
+          <div class="viewer-footer">
+
+            <div class="confidence-legend">
+
+              <span class="legend-label">Hallucination Risk / Confidence Scale:</span>
+
+              <div class="legend-bar"></div>
+
+              <div class="legend-ticks">
+
+                <span>0% (Hallucination Risk)</span>
+
+                <span>50% (Inferred)</span>
+
+                <span>100% (Observed Ground Truth)</span>
+
+                <span class="legend-cloud-tick">&#x25A6; Hatched Slate: Cloud Occluded (0%)</span>
+
+              </div>
+
+            </div>
+
+            <div class="infra-legend" id="infra-legend">
+
+              <span class="infra-legend-title infra-legend-heading">Layers:</span>
+
+              <span class="infra-item infra-item-purple"><span class="infra-dot infra-dot-purple"></span>Building Footprints</span>
+
+              <span class="infra-item infra-item-cyan"><span class="infra-dot infra-dot-cyan"></span>Road Corridors</span>
+
+            </div>
+
+            <div class="inspector-badge">
+
+              <span id="inspector-coords">Resolution Gain: 30.0m &rarr; 2.5m (16x pixel density)</span>
+
+              <span id="inspector-dims" class="inspector-dims-text">LR: 128&times;128 px &rarr; SR: 512&times;512 px (Genuinely 4x array expansion)</span>
+
+          </div><!-- /viewer-footer -->
+
+          <div class="export-row">
+            <button type="button" class="btn btn-primary" id="btn-download-sr" title="Download 2.5m Super-Resolved Image">↓ Export SR (2.5m)</button>
+            <button type="button" class="btn" id="btn-download-conf" title="Download MC-Dropout Confidence Map">Export Confidence Map</button>
+            <button type="button" class="btn" id="btn-download-geojson" title="Download Infrastructure GeoJSON Vector Layers">Export GeoJSON</button>
+          </div>
+
+
+
+        </section><!-- /viewer-main -->
+
+      </div><!-- /viewer-layout -->
+
+    </div><!-- /view-sr-mapping -->
+
+
+
+    <!-- View 2: Dedicated Spectral & Disaster Analysis Workspace (unchanged) -->
+
+    <div id="view-spectral-analysis" class="app-view-container hidden">
+
+        <main class="workspace-grid spectral-workspace-grid">
+
+            <aside class="sidebar-panel" aria-label="Spectral Analysis AOI Selection">
+
+                <div class="panel-card">
+
+                    <div class="panel-card-header">
+
+                        <h3 class="panel-title">
+
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+
+                            Area of Interest (AOI)
+
+                        </h3>
+
+                        <span class="card-badge card-badge-cyan">SHARED AOI</span>
+
+                    </div>
+
+                    <p class="panel-desc">Select a preset target scene or jump to custom coordinates. Shares identical pipeline and cache with Super-Resolution.</p>
+
+                    <div class="presets-container" id="spectral-presets-list"></div>
+
+                    <div class="map-wrapper">
+
+                        <div id="spectral-aoi-map"></div>
+
+
+
+                    </div>
+
+                    <div class="coord-search-bar" id="spectral-coords-entry-box">
+
+                        <div class="coord-input-wrap"><span class="coord-prefix">LAT</span><input type="text" inputmode="decimal" id="spectral-input-lat" class="coord-text-input" value="30.5750" placeholder="30.5750"></div>
+
+                        <div class="coord-separator">|</div>
+
+                        <div class="coord-input-wrap"><span class="coord-prefix">LON</span><input type="text" inputmode="decimal" id="spectral-input-lon" class="coord-text-input" value="75.3300" placeholder="75.3300"></div>
+
+                        <button id="spectral-btn-goto-coords" type="button" class="btn-coord-jump" title="Jump to coordinates"><span>Jump</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+
+                    </div>
+
+                    <button id="spectral-btn-draw-rect" type="button" class="btn btn-sm btn-outline btn-block-mt">Draw Free Bounding Box on Map</button>
+
+                </div>
+
+                <div class="panel-card">
+
+                    <div class="panel-card-header">
+
+                        <h3 class="panel-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Scientific Data Path</h3>
+
+                        <span class="card-badge card-badge-emerald">ZERO RE-RUN</span>
+
+                    </div>
+
+                    <p class="panel-desc">Scientific index calculation directly utilizes the raw multispectral float32 reflectance array (never display-graded RGB).</p>
+
+                    <div class="spectral-pipeline-meta">
+
+                        <div class="spectral-meta-row"><span class="spectral-meta-label">Active Model:</span><span class="spectral-meta-val" id="spectral-meta-model">HAT (2.5m GSD)</span></div>
+
+                        <div class="spectral-meta-row"><span class="spectral-meta-label">Computation:</span><span class="spectral-meta-val cyan">awesome-spectral-indices (spyndex)</span></div>
+
+                        <div class="spectral-meta-row"><span class="spectral-meta-label">Data Fidelity:</span><span class="spectral-meta-val green">Raw BOA Reflectance (Unaltered)</span></div>
+
+                        <div class="spectral-meta-row"><span class="spectral-meta-label">Active AOI:</span><span class="spectral-meta-val" id="spectral-meta-aoi">Punjab Agriculture</span></div>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+
+
+            <section class="viewer-stage">
+
+                <div class="spectral-primary-toolbar">
+
+                    <div class="spectral-mode-cards-strip" id="spectral-mode-cards-strip">
+
+                        <button type="button" class="spectral-mode-tab" data-mode="true_color" id="sm-btn-true_color"><span class="sm-tab-icon">&#x1F33F;</span><div class="sm-tab-text"><span class="sm-tab-title">True Color</span><span class="sm-tab-sub">Natural Surface (RGB)</span></div></button>
+
+                        <button type="button" class="spectral-mode-tab active" data-mode="ndvi" id="sm-btn-ndvi"><span class="sm-tab-icon">&#x1F331;</span><div class="sm-tab-text"><span class="sm-tab-title">NDVI &mdash; Crop Health</span><span class="sm-tab-sub">Canopy Vigor (NIR/Red)</span></div></button>
+
+                        <button type="button" class="spectral-mode-tab" data-mode="ndwi" id="sm-btn-ndwi"><span class="sm-tab-icon">&#x1F4A7;</span><div class="sm-tab-text"><span class="sm-tab-title">NDWI &mdash; Flood &amp; Water</span><span class="sm-tab-sub">Inundation (Green/NIR)</span></div></button>
+
+                        <button type="button" class="spectral-mode-tab" data-mode="nbr" id="sm-btn-nbr"><span class="sm-tab-icon">&#x1F525;</span><div class="sm-tab-text"><span class="sm-tab-title">NBR &mdash; Fire Damage</span><span class="sm-tab-sub">Burn Scars (NIR/SWIR2)</span></div></button>
+
+                        <button type="button" class="spectral-mode-tab" data-mode="ndbi" id="sm-btn-ndbi"><span class="sm-tab-icon">&#x1F3E2;</span><div class="sm-tab-text"><span class="sm-tab-title">NDBI &mdash; Urban Extent</span><span class="sm-tab-sub">Built-Up (SWIR1/NIR)</span></div></button>
+
+                    </div>
+
+                    <div class="spectral-sub-toolbar">
+
+                        <div class="mode-toggles">
+
+                            <button type="button" class="tab-btn active" id="tab-spectral-split">Split Slider (10m vs 2.5m)</button>
+
+                            <button type="button" class="tab-btn" id="tab-spectral-single">Single 2.5m Deep-Zoom</button>
+
+                        </div>
+
+                        <div class="osd-zoom-controls">
+
+                            <span class="osd-zoom-label">Zoom:</span>
+
+                            <button type="button" id="btn-spectral-zoom-in"    class="btn-zoom" title="Zoom In (+)">&#x2795;</button>
+
+                            <button type="button" id="btn-spectral-zoom-out"   class="btn-zoom" title="Zoom Out (-)">&#x2796;</button>
+
+                            <button type="button" id="btn-spectral-zoom-reset" class="btn-zoom" title="Fit Entire Photo (Full View)">Fit</button>
+
+                            <span id="spectral-zoom-badge" class="zoom-level-badge">1.0x</span>
+
+                        </div>
+
+                        <div class="export-actions">
+
+                            <button type="button" id="btn-spectral-download-png" class="btn btn-sm btn-outline">Export Spectral PNG</button>
+
+                            <button type="button" id="btn-spectral-download-tif" class="btn btn-sm btn-outline btn-geotiff-export">Export GeoTIFF (2.5m Raw)</button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="canvas-viewport" id="spectral-canvas-viewport">
+
+                    <div class="split-slider-container" id="spectral-slider-container">
+
+                        <div class="osd-wrapper osd-lr-wrapper" id="spectral-osd-lr-wrapper">
+
+                            <div id="spectral-osd-lr" class="osd-viewport"></div>
+
+                            <div class="img-tag tag-lr" id="spectral-tag-lr">Input: Sentinel-2 (10m)</div>
+
+                        </div>
+
+                        <div class="osd-wrapper osd-sr-wrapper" id="spectral-sr-wrapper">
+
+                            <div id="spectral-osd-sr" class="osd-viewport"></div>
+
+                            <div class="img-tag tag-sr" id="spectral-tag-sr">Output: HAT 2.5m (NDVI)</div>
+
+                        </div>
+
+                        <div class="slider-handle" id="spectral-slider-handle">
+
+                            <div class="handle-line"></div>
+
+                            <div class="handle-grip">
+
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="spectral-single-container" id="spectral-single-container" style="display: none;">
+
+                        <div id="spectral-osd-single" class="osd-viewport" style="width: 100%; height: 100%;"></div>
+
+                        <div class="img-tag tag-sr" id="spectral-single-header">Output: HAT 2.5m (NDVI)</div>
+
+                    </div>
+
+                    <div class="loading-scrim hidden" id="spectral-loading-scrim">
+
+                        <div class="spinner-core"></div>
+
+                        <div class="loading-text">Computing Multi-Band Spectral Index (spyndex)...</div>
+
+                        <div class="loading-sub">Preserving raw multispectral surface reflectance</div>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="viewer-footer spectral-viewer-footer">
+
+                    <div class="spectral-legend" id="spectral-page-legend" style="flex: 1;">
+
+                        <div class="spectral-legend-header">
+
+                            <span class="spectral-legend-title" id="sp-legend-title">&#x1F331; NDVI &mdash; Normalized Difference Vegetation Index</span>
+
+                            <span class="spectral-legend-stats" id="sp-legend-stats">Formula: (NIR - Red) / (NIR + Red)</span>
+
+                        </div>
+
+                        <div class="spectral-legend-bar-container" id="sp-legend-bar-container">
+
+                            <div class="spectral-legend-bar" id="sp-legend-bar"></div>
+
+                            <div class="spectral-legend-ticks" id="sp-legend-ticks">
+
+                                <span id="sp-tick-min">-0.2</span>
+
+                                <span id="sp-tick-mid">0.3</span>
+
+                                <span id="sp-tick-max">+0.85</span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="inspector-badge">
+
+                        <span id="spectral-inspector-resolution">Spatial Resolution: 2.5m GSD (Sub-4m)</span>
+
+                        <span id="spectral-inspector-engine">Engine: HAT Multi-Spectral (spyndex)</span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <aside class="hud-panel" aria-label="Spectral and Disaster Analytics HUD">
+
+                <div class="panel-card usp-card spectral-stat-card">
+
+                    <div class="panel-card-header">
+
+                        <h3 class="panel-title" id="stat-category-title">Crop Canopy Coverage</h3>
+
+                        <span class="card-badge card-badge-emerald" id="stat-threshold-badge">NDVI &ge; 0.40</span>
+
+                    </div>
+
+                    <p class="panel-desc" id="stat-category-desc">Real-world land area calculated from 2.5m pixel density expansion.</p>
+
+                    <div class="spectral-big-stat-box">
+
+                        <div class="spectral-stat-number" id="stat-area-km2">-- km&sup2;</div>
+
+                        <div class="spectral-stat-pct-badge" id="stat-area-pct">--% of AOI</div>
+
+                    </div>
+
+                    <div class="spectral-stat-sub">
+
+                        <span>Total AOI Surveyed: <strong id="stat-total-aoi">-- km&sup2;</strong></span>
+
+                        <span>Pixel GSD: <strong>2.5m (6.25 m&sup2;/px)</strong></span>
+
+                    </div>
+
+                </div>
+
+                <div class="panel-card">
+
+                    <div class="panel-card-header">
+
+                        <h3 class="panel-title">Index Distribution</h3>
+
+                        <span class="card-badge card-badge-cyan">NUMERICAL METRICS</span>
+
+                    </div>
+
+                    <p class="panel-desc">Radiometric values computed across the active 2.5m raster array.</p>
+
+                    <div class="metric-grid">
+
+                        <div class="metric-tile highlight"><div class="metric-val" id="metric-sp-mean">--</div><div class="metric-lbl">Mean Index Value</div></div>
+
+                        <div class="metric-tile"><div class="metric-val metric-val-emerald" id="metric-sp-max">--</div><div class="metric-lbl">Peak (Max Value)</div></div>
+
+                        <div class="metric-tile"><div class="metric-val metric-val-yellow" id="metric-sp-min">--</div><div class="metric-lbl">Minimum Value</div></div>
+
+                        <div class="metric-tile"><div class="metric-val" id="metric-sp-std">--</div><div class="metric-lbl">Std Deviation (&sigma;)</div></div>
+
+                    </div>
+
+                </div>
+
+                <div class="panel-card">
+
+                    <div class="panel-card-header">
+
+                        <h3 class="panel-title">Scientific Interpretation</h3>
+
+                        <span class="card-badge card-badge-purple">DECISION SUPPORT</span>
+
+                    </div>
+
+                    <div class="callout-box" id="spectral-decision-box" style="margin-top:0.5rem;font-size:0.8rem;line-height:1.45;">
+
+                        <strong>Agricultural Monitoring:</strong> NDVI &ge; 0.4 indicates dense vegetative canopy. Sub-4m resolution resolves individual agricultural parcel boundaries.
+
+                    </div>
+
+                    <div class="callout-box-slate" style="margin-top:0.75rem;font-size:0.75rem;">
+
+                        <strong>Proven Scientific Standards:</strong> Computed via <code>awesome-spectral-indices</code> (spyndex) using official ESA Sentinel-2 band equations.
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </main>
+
+    </div><!-- /view-spectral-analysis -->
+
+
+
+    </div><!-- /dash-page-viewer -->
+
+    <!-- ======== DASH PAGE 2: CONFIGURATION ======== -->
+
+    <div class="dash-page" id="dash-page-config">
+      <div class="config-page">
+        <div class="page-head">
+          <h2>Configuration</h2>
+          <p>Set up the inference engine before running super-resolution. For live analysis, adjust settings in the Viewer sidebar.</p>
+        </div>
+
+        <div class="config-form-group">
+          <label for="select-model">Architecture</label>
+          <select id="select-model" class="config-select">
+            <option value="hat">HAT — Hybrid Attention Transformer (Sharpest Edges)</option>
+            <option value="ldsr_s2">LDSR-S2 — Diffusion Model (High Detail)</option>
+            <option value="srmnet">SRM-Net — Residual Attention + MC-Dropout</option>
+            <option value="carn">CARN — Cascading Residual Network (Conservative)</option>
+            <option value="swinir">SwinIR — Swin Transformer</option>
+          </select>
+          <div id="ldsr-diffusion-notice" class="hidden" style="margin-top:8px;padding:8px 12px;background:rgba(217,119,6,0.15);border:1px solid #d97706;border-radius:6px;font-size:0.8rem;color:#fcd34d;">⚡ LDSR-S2 Latent Diffusion Active: 15 iterative denoising steps. Monitor the Confidence HUD to assess hallucination risk.</div>
+        </div>
+
+        <div class="config-form-group">
+          <label for="select-scale">Target Resolution / Scale</label>
+          <select id="select-scale" class="config-select">
+            <option value="4">4× Upscaling (10.0m → 2.5m GSD — Sub-4m Target)</option>
+            <option value="2">2× Upscaling (10.0m → 5.0m GSD)</option>
+          </select>
+        </div>
+
+        <div class="config-form-group">
+          <label>Acquisition Mode</label>
+          <div class="config-toggle-group">
+            <span id="btn-mode-single" class="active" style="cursor:pointer;">Single Pass</span>
+            <span id="btn-mode-multi" style="cursor:pointer;">Multi-Temporal (3-Pass Fusion)</span>
+          </div>
+        </div>
+
+        <div class="config-form-group">
+          <div class="slider-row">
+            <label for="slider-mc-samples">MC-Dropout Passes (Uncertainty)</label>
+            <span class="val" id="val-mc-samples">8 passes</span>
+          </div>
+          <input type="range" id="slider-mc-samples" class="config-range" min="4" max="16" step="2" value="8">
+        </div>
+
+        <div class="config-divider-box">
+          <div>
+            <span class="config-divider-title" style="color:#b19eff;">Stage 2: Real-ESRGAN Sharpening (outscale=1)</span>
+            <span class="config-divider-sub">RealESRGAN_x4plus (RRDBNet) preview pass — Metrics stay on pure HAT</span>
+          </div>
+          <input type="checkbox" id="check-realesrgan-sharpen" class="checkbox-cyan">
+        </div>
+
+        <button type="button" id="btn-trigger-upload" class="link-action" style="background:none;border:none;color:var(--accent-cyan);cursor:pointer;font-family:inherit;font-size:inherit;padding:0;">↑ Upload custom GeoTIFF / tile</button>
+        <input type="file" id="file-upload" accept=".tif,.tiff,.npy,.png,.jpg,.jpeg" style="display:none;">
+      </div>
+    </div><!-- /dash-page-config -->
+
+    <!-- ======== DASH PAGE 3: ANALYTICS & PROVENANCE ======== -->
+    <div class="dash-page" id="dash-page-analytics">
+      <div class="analytics-page">
+
+        <div class="page-head">
+          <h2>Analytics &amp; provenance</h2>
+          <p>Uncertainty, validation against ground truth, detected infrastructure, and the inference chain of custody.</p>
+        </div>
+
+        <!-- Row 1: 2-column grid — Hallucination + Validation side by side -->
+        <div class="analytics-grid">
+
+          <!-- Card 1: Hallucination & Uncertainty -->
+          <div class="acard">
+            <div class="acard-head">
+              <h3>Hallucination &amp; uncertainty</h3>
+              <span class="pill-badge teal">The USP</span>
+            </div>
+            <div class="tile-grid">
+              <div class="tile"><div class="v good" id="a-metric-confidence">--%</div><div class="l">Avg. confidence score</div></div>
+              <div class="tile"><div class="v" id="a-metric-uncertainty">--</div><div class="l">MC-Dropout variance</div></div>
+              <div class="tile"><div class="v" id="a-metric-sam">--°</div><div class="l">Spectral angle (SAM)</div></div>
+              <div class="tile"><div class="v" id="a-metric-cycle">--</div><div class="l">Cycle-consistency MAE</div></div>
+            </div>
+            <p class="acard-note">Verified via ESA opensr-test and Monte-Carlo dropout variance so judges can check whether fine boundaries are physically observed by Sentinel-2 or synthesised by the model.</p>
+          </div>
+
+          <!-- Card 2: Validation vs HR Reference -->
+          <div class="acard">
+            <div class="acard-head">
+              <h3>Validation vs. HR reference</h3>
+              <span class="pill-badge violet">Paired ground truth</span>
+            </div>
+            <div class="tile-grid">
+              <div class="tile"><div class="v" id="a-metric-psnr">-- dB</div><div class="l">PSNR vs HR reference</div></div>
+              <div class="tile"><div class="v" id="a-metric-ssim">--</div><div class="l">SSIM structure index</div></div>
+              <div class="tile"><div class="v" id="a-metric-ergas">--</div><div class="l">ERGAS synthesis error</div></div>
+              <div class="tile"><div class="v" id="a-metric-runtime">-- ms</div><div class="l">Inference latency (CPU)</div></div>
+            </div>
+            <div class="kv-strip">
+              <div>AROSICS shift (x, y)<b id="a-coreg-shift">--</b></div>
+              <div>Reference source<b>WorldStrat — SPOT 1.5m</b></div>
+              <div>Last validated<b id="a-last-validated">--</b></div>
+            </div>
+          </div>
+
+        </div><!-- /analytics-grid -->
+
+        <!-- Row 2: Full-width — Detected Infrastructure -->
+        <div class="acard full">
+          <div class="acard-head">
+            <h3>Detected infrastructure</h3>
+            <span class="pill-badge amber">Multi-class extraction</span>
+          </div>
+          <div class="tile-grid tile-grid-3">
+            <div class="tile"><div class="v" id="a-metric-buildings">--</div><div class="l">Building footprints</div></div>
+            <div class="tile"><div class="v" id="a-metric-roads">-- km</div><div class="l">Road corridors</div></div>
+            <div class="tile"><div class="v good" id="a-metric-infra-conf">--%</div><div class="l">Detection confidence</div></div>
+          </div>
+          <p class="acard-note">Full vector topology exported as GeoJSON with per-feature confidence metrics for downstream GIS analysis.</p>
+        </div>
+
+        <!-- Row 3: Full-width — Pipeline Verification -->
+        <div class="acard full">
+          <div class="acard-head">
+            <h3>Pipeline verification</h3>
+            <span class="pill-badge neutral">Live provenance</span>
+          </div>
+          <div class="pipeline-grid">
+            <div class="pcell"><div class="l">Active checkpoint</div><div class="v" id="verif-checkpoint">--</div></div>
+            <div class="pcell"><div class="l">Dropout mode</div><div class="v" id="verif-dropout">--</div></div>
+            <div class="pcell"><div class="l">Array dimensions</div><div class="v" id="verif-dimensions">--</div></div>
+            <div class="pcell"><div class="l">Stage 2 sharpening</div><div class="v" id="verif-unsharp">--</div></div>
+            <div class="pcell"><div class="l">Ground truth reference</div><div class="v" id="verif-reference">--</div></div>
+            <div class="pcell"><div class="l">Temporal fusion</div><div class="v" id="verif-temporal">--</div></div>
+            <div class="pcell"><div class="l">Blockchain provenance</div><div class="v" id="verif-blockchain-status">--</div></div>
+            <div class="pcell"><div class="l">Per-pixel variance</div><div class="v" id="verif-variance">--</div></div>
+          </div>
+          <div class="chain-row">
+            <p>On-chain provenance: <b>sub-11cm geo-tagging</b> — SHA-256 anchored to Polygon Amoy testnet, chain ID 80002</p>
+            <button type="button" class="btn btn-sm btn-outline" id="btn-footer-open-blockchain">View on explorer</button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /dash-page-analytics -->
+
+
+    <!-- analytics sync script: mirrors HUD values into the analytics tab -->
+    <script>
+    (function() {
+      // Tab switching
+      var dashTabs = document.getElementById('dash-tabs');
+      if (dashTabs) {
+        dashTabs.querySelectorAll('button').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            dashTabs.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.dash-page').forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            var target = document.getElementById('dash-page-' + btn.dataset.dashPage);
+            if (target) {
+              target.classList.add('active');
+              // sync analytics values when switching to analytics tab
+              if (btn.dataset.dashPage === 'analytics') syncAnalytics();
+            }
+          });
+        });
+      }
+
+      // Mirror HUD metric IDs -> analytics tab IDs
+      function mirror(fromId, toId) {
+        var src = document.getElementById(fromId);
+        var dst = document.getElementById(toId);
+        if (src && dst) dst.textContent = src.textContent;
+      }
+
+      function syncAnalytics() {
+        mirror('metric-confidence',  'a-metric-confidence');
+        mirror('metric-uncertainty', 'a-metric-uncertainty');
+        mirror('metric-sam',         'a-metric-sam');
+        mirror('metric-cycle',       'a-metric-cycle');
+        mirror('metric-psnr',        'a-metric-psnr');
+        mirror('metric-ssim',        'a-metric-ssim');
+        mirror('metric-ergas',       'a-metric-ergas');
+        mirror('metric-runtime',     'a-metric-runtime');
+        mirror('metric-buildings',   'a-metric-buildings');
+        mirror('metric-roads',       'a-metric-roads');
+        mirror('metric-infra-conf',  'a-metric-infra-conf');
+
+        // AROSICS
+        var cs = document.getElementById('coreg-shift-status');
+        var ad = document.getElementById('a-coreg-shift');
+        if (cs && ad) ad.textContent = cs.textContent;
+        // date
+        var mc = document.getElementById('metric-computed-at');
+        var ald = document.getElementById('a-last-validated');
+        if (mc && ald) ald.textContent = mc.textContent;
+      }
+
+      // Also sync whenever app.js updates a metric (MutationObserver)
+      var metricIds = ['metric-confidence','metric-uncertainty','metric-sam','metric-cycle',
+                       'metric-psnr','metric-ssim','metric-ergas','metric-runtime',
+                       'metric-buildings','metric-roads','metric-infra-conf'];
+      metricIds.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        new MutationObserver(function() {
+          if (document.getElementById('dash-page-analytics') &&
+              document.getElementById('dash-page-analytics').classList.contains('active')) {
+            syncAnalytics();
+          }
+        }).observe(el, { childList: true, subtree: true, characterData: true });
+      });
+    })();
+    </script>
+
+    <!-- Blockchain Provenance & Version Chain Modal -->
+    <div class="modal-overlay hidden" id="modal-blockchain" role="dialog" aria-modal="true" aria-labelledby="modal-blockchain-title">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-chain-tag">
+                        <span class="chain-dot-purple"></span>
+                        Polygon Amoy Testnet (Chain ID: 80002)
+                    </div>
+                    <h2 class="modal-title" id="modal-blockchain-title">NETRA Blockchain Provenance</h2>
+                    <p class="modal-subtitle">Immutable on-chain Geo-Tagging &amp; Version History Chain per tile</p>
+                </div>
+                <button type="button" class="btn-modal-close" id="btn-close-blockchain-modal" aria-label="Close modal">&times;</button>
+            </div>
+
+            <!-- Active Tile Telemetry Bar -->
+            <div class="blockchain-telemetry-bar">
+                <div class="bc-tele-item">
+                    <span class="bc-tele-label">Active Tile</span>
+                    <span class="bc-tele-val" id="bc-tile-id">punjab_agri</span>
+                </div>
+                <div class="bc-tele-item">
+                    <span class="bc-tele-label">On-Chain Version</span>
+                    <span class="bc-tele-val cyan" id="bc-version-tag">v1 (Verified)</span>
+                </div>
+                <div class="bc-tele-item">
+                    <span class="bc-tele-label">Centre Coordinates (Scaled 1e6)</span>
+                    <span class="bc-tele-val" id="bc-coords">31.1471°N, 75.3412°E</span>
+                </div>
+                <div class="bc-tele-item">
+                    <span class="bc-tele-label">SHA-256 Output Hash</span>
+                    <code class="bc-tele-code" id="bc-hash" title="Full SHA-256 Hash">0x...</code>
+                </div>
+                <div class="bc-tele-item">
+                    <span class="bc-tele-label">Polygonscan</span>
+                    <a href="https://amoy.polygonscan.com" target="_blank" rel="noopener noreferrer" class="bc-explorer-link" id="bc-tx-link">View Tx ↗</a>
+                </div>
+            </div>
+
+            <!-- Tabs: Version History Chain & On-Chain File Verifier -->
+            <div class="bc-tab-bar">
+                <button type="button" class="bc-tab-btn active" id="tab-bc-history">Version History Chain</button>
+                <button type="button" class="bc-tab-btn" id="tab-bc-verify">Verify File On-Chain</button>
+            </div>
+
+            <!-- Tab Content 1: Version History Chain Timeline -->
+            <div class="bc-tab-pane" id="pane-bc-history">
+                <div class="bc-timeline" id="bc-timeline-list">
+                    <!-- Populated dynamically by app.js -->
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Verification Tool -->
+            <div class="bc-tab-pane hidden" id="pane-bc-verify">
+                <div class="bc-verify-box">
+                    <p class="bc-verify-desc">
+                        Select any local or exported GeoTIFF / PNG to verify its cryptographic hash against the latest Polygon Amoy on-chain record for this tile.
+                    </p>
+                    <div class="bc-upload-dropzone" id="bc-verify-dropzone">
+                        <input type="file" id="input-verify-file" class="bc-file-input" accept=".tif,.tiff,.png,.jpg">
+                        <div class="dropzone-text">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span>Choose or drag satellite file here to verify on-chain</span>
+                        </div>
+                    </div>
+                    <div id="bc-verify-result" class="bc-verify-result hidden"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="modal-contract-info">
+                    <span>Contract: <code id="bc-contract-address">TileProvenance.sol (Polygon Amoy)</code></span>
+                </div>
+                <button type="button" class="btn btn-secondary" id="btn-done-blockchain">Done</button>
+            </div>
+        </div>
+    </div><!-- /modal-blockchain -->
+
+    <!-- Leaflet & Leaflet.draw JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <!-- OpenSeadragon Deep-Zoom High-Resolution Viewer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/openseadragon.min.js"></script>
+    </div>
+
+    <!-- ============ FULL MAP MODAL ============ -->
+    <div class="map-modal-overlay" id="map-modal-overlay">
+      <div class="map-modal">
+        <div class="map-modal-head">
+          <h3>Choose location</h3>
+          <button class="map-modal-close" id="map-modal-close">&#x2715;</button>
+        </div>
+        <div class="map-modal-toolbar">
+          <div class="map-search">
+            <span class="icon">&#x1F50D;</span>
+            <input type="text" id="map-modal-search" placeholder="Search a place (e.g. Varanasi, India) and press Enter">
+          </div>
+          <div class="divider"></div>
+          <div class="coord-inline">
+            <input type="text" id="map-modal-lat" placeholder="Lat" value="25.3200">
+            <input type="text" id="map-modal-lon" placeholder="Lon" value="82.9750">
+            <button class="btn btn-sm" id="map-modal-jump">Jump</button>
+          </div>
+          <div class="divider"></div>
+          <button class="btn btn-sm" id="map-modal-draw">&#x25AD; Draw bounding box</button>
+        </div>
+        <div class="map-modal-body">
+          <div class="map-canvas" id="map-modal-canvas">
+            <!-- Map will be moved here -->
+          </div>
+        </div>
+        <div class="map-modal-foot">
+          <span class="coords-readout" id="map-modal-readout">Selected: Lat 25.3200  Lon 82.9750</span>
+          <div style="display:flex;gap:10px;">
+            <button class="btn" id="map-modal-cancel">Cancel</button>
+            <button class="btn btn-primary" id="map-modal-apply">Apply selection</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="/static/app.js?v=20261001_v9"></script>
+    <script src="/static/netra-landing.js?v=20261001_v9"></script>
+</body>
+
+</html>
