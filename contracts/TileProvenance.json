@@ -1,0 +1,531 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "submitter",
+        "type": "address"
+      }
+    ],
+    "name": "SubmitterAuthorized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "submitter",
+        "type": "address"
+      }
+    ],
+    "name": "SubmitterRevoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "versionNumber",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "imageHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "previousHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "submitter",
+        "type": "address"
+      }
+    ],
+    "name": "TileRegistered",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "submitter",
+        "type": "address"
+      }
+    ],
+    "name": "authorizeSubmitter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "authorized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      }
+    ],
+    "name": "getHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "imageHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "int256",
+            "name": "latCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "lonCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "processedTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "previousHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "versionNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "submitter",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct TileProvenance.TileRecord[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      }
+    ],
+    "name": "getLatest",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "imageHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "int256",
+            "name": "latCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "lonCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "processedTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "previousHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "versionNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "submitter",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct TileProvenance.TileRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "versionNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "getVersion",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "imageHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "int256",
+            "name": "latCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "lonCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "processedTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "previousHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "versionNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "submitter",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct TileProvenance.TileRecord",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      }
+    ],
+    "name": "getVersionCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "imageHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "int256",
+        "name": "latCenter",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "lonCenter",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "bboxMinLat",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "bboxMinLon",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "bboxMaxLat",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "bboxMaxLon",
+        "type": "int256"
+      }
+    ],
+    "name": "registerTile",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "versionNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "previousHash",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "submitter",
+        "type": "address"
+      }
+    ],
+    "name": "revokeSubmitter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tileId",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "providedHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "verifyTile",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "matched",
+        "type": "bool"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "imageHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "int256",
+            "name": "latCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "lonCenter",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMinLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLat",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "bboxMaxLon",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "processedTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "previousHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "versionNumber",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "submitter",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct TileProvenance.TileRecord",
+        "name": "latest",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
